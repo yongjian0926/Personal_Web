@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Navigation | Yongjian Wang</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background-color: #0b0b0b; color: #f4f4f4; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; min-height: 100vh; }
+    
+    /* 导航栏样式 */
+    nav { 
+      display: flex; justify-content: space-between; align-items: center; 
+      padding: 1.2rem 5%; background: #0b0b0b; 
+      position: fixed; width: 100%; top: 0; z-index: 100; border-bottom: 1px solid #333; 
+    }
+    .logo { font-size: 1.4rem; letter-spacing: 3px; font-weight: bold; color: #fff; text-transform: uppercase; text-decoration: none; transition: 0.3s; white-space: nowrap; }
+    .logo:hover { color: #d4af37; }
+    
+    .nav-right-container { display: flex; align-items: center; gap: 2.5rem; }
+    .nav-links { display: flex; gap: 2rem; align-items: center; }
+    .nav-links a { color: #aaa; text-decoration: none; letter-spacing: 2px; font-size: 0.9rem; transition: 0.3s; white-space: nowrap; }
+    .nav-links a:hover, .nav-links a.active { color: #d4af37; }
+    
+    .lang-btn { 
+      background: transparent; border: 1px solid #444; color: #fff; 
+      padding: 4px 10px; cursor: pointer; font-size: 0.8rem; letter-spacing: 1px; 
+      transition: 0.3s; white-space: nowrap; border-radius: 4px;
+    }
+    .lang-btn:hover { border-color: #d4af37; color: #d4af37; }
+
+    /* Apple 官网动画汉堡包按钮 */
+    .menu-toggle {
+      display: none; position: relative;
+      width: 18px; height: 18px; 
+      background: transparent; border: none; cursor: pointer; padding: 0; z-index: 101;
+    }
+    .menu-toggle .bar { 
+      position: absolute; left: 0;
+      width: 100%; height: 2px; 
+      background-color: #e5e5e5; border-radius: 1px; 
+      transition: transform 0.35s cubic-bezier(0.52, 0.16, 0.52, 0.84), top 0.35s cubic-bezier(0.52, 0.16, 0.52, 0.84); 
+    }
+
+    .menu-toggle .bar:nth-child(1) { top: 4px; }
+    .menu-toggle .bar:nth-child(2) { top: 12px; }
+
+    .menu-toggle.active .bar:nth-child(1) {
+      top: 8px;
+      transform: rotate(45deg);
+    }
+    .menu-toggle.active .bar:nth-child(2) {
+      top: 8px;
+      transform: rotate(-45deg);
+    }
+
+    @media (max-width: 1024px) {
+      nav { padding: 1.1rem 6%; }
+      .logo { font-size: 1.1rem; letter-spacing: 2px; }
+      .menu-toggle { display: block; }
+
+      .nav-right-container { gap: 16px; }
+      
+      /* Apple 风格全屏抽屉菜单容器 */
+      .nav-links {
+        position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+        background-color: #0b0b0b;
+        flex-direction: column; align-items: flex-start; justify-content: flex-start;
+        padding: 100px 10% 40px 10%; gap: 24px;
+        opacity: 0; visibility: hidden; pointer-events: none;
+        transition: opacity 0.35s cubic-bezier(0.52, 0.16, 0.24, 1), visibility 0.35s ease;
+        z-index: 99;
+      }
+      .nav-links.active { opacity: 1; visibility: visible; pointer-events: auto; }
+
+      /* 菜单项默认状态（隐藏向上偏移） */
+      .nav-links a {
+        font-size: 1.65rem; font-weight: 600; letter-spacing: 1.5px;
+        color: #e5e5e5; width: 100%; display: block; padding: 4px 0;
+        opacity: 0;
+        transform: translateY(-20px);
+        transition: opacity 0.4s cubic-bezier(0.52, 0.16, 0.24, 1), transform 0.4s cubic-bezier(0.52, 0.16, 0.24, 1), color 0.3s;
+      }
+
+      /* 激活时按延迟顺序从上到下逐个滑入显示 */
+      .nav-links.active a {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      .nav-links.active a:nth-child(1) { transition-delay: 0.1s; }
+      .nav-links.active a:nth-child(2) { transition-delay: 0.16s; }
+      .nav-links.active a:nth-child(3) { transition-delay: 0.22s; }
+      .nav-links.active a:nth-child(4) { transition-delay: 0.28s; }
+
+      .nav-links a:hover, .nav-links a.active { color: #d4af37; }
+    }
+
+    /* 主内容布局 */
+    .nav-container { padding: 140px 5% 60px 5%; max-width: 1200px; margin: 0 auto; }
+    .page-title { font-size: 2rem; letter-spacing: 4px; text-align: center; margin-bottom: 3rem; color: #d4af37; }
+
+    /* 分类板块 */
+    .category-section { margin-bottom: 40px; }
+    .category-title { 
+      font-size: 1.2rem; color: #fff; border-left: 3px solid #d4af37; 
+      padding-left: 12px; margin-bottom: 20px; letter-spacing: 1.5px; 
+    }
+
+    /* 网址卡片网格 */
+    .nav-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 20px; }
+    
+    .nav-card {
+      background: #141414; border: 1px solid #222; border-radius: 8px;
+      padding: 18px 20px; text-decoration: none; color: #fff;
+      display: flex; flex-direction: column; gap: 8px;
+      cursor: pointer; transition: all 0.3s ease;
+    }
+    .nav-card:hover {
+      border-color: #d4af37; transform: translateY(-4px);
+      box-shadow: 0 8px 20px rgba(212, 175, 55, 0.1);
+    }
+    .card-header { display: flex; align-items: center; gap: 12px; }
+    
+    .compass-icon {
+      width: 22px; height: 22px; stroke: #ffffff; fill: none; flex-shrink: 0;
+    }
+
+    .card-title { font-size: 1.05rem; font-weight: 600; color: #f4f4f4; }
+    .card-desc { 
+      font-size: 0.85rem; color: #888; line-height: 1.4; 
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    }
+
+    /* 模态弹窗样式 */
+    .modal-overlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(4px);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 1000; opacity: 0; visibility: hidden;
+      transition: opacity 0.3s ease, visibility 0.3s ease;
+      padding: 20px;
+    }
+    .modal-overlay.active { opacity: 1; visibility: visible; }
+
+    .modal-card {
+      background: #181818; border: 1px solid #333; border-radius: 12px;
+      width: 100%; max-width: 480px; padding: 24px; position: relative;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+      transform: translateY(20px); transition: transform 0.3s ease;
+    }
+    .modal-overlay.active .modal-card { transform: translateY(0); }
+
+    .modal-close {
+      position: absolute; top: 16px; right: 16px; background: transparent;
+      border: none; color: #888; font-size: 1.5rem; cursor: pointer;
+      line-height: 1; transition: color 0.2s;
+    }
+    .modal-close:hover { color: #fff; }
+
+    .modal-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+    .modal-title { font-size: 1.25rem; font-weight: 600; color: #fff; }
+    .modal-desc { font-size: 0.95rem; color: #bbb; line-height: 1.6; margin-bottom: 24px; }
+
+    .modal-footer { display: flex; justify-content: flex-end; }
+    
+    .modal-visit-btn {
+      background: #d4af37; color: #000; font-weight: 600; padding: 8px 22px;
+      border-radius: 6px; text-decoration: none; font-size: 0.9rem;
+      letter-spacing: 1px; transition: all 0.2s ease; display: inline-flex; align-items: center; gap: 6px;
+    }
+    .modal-visit-btn:hover { background: #f0c848; transform: translateY(-1px); }
+
+    @media (max-width: 600px) {
+      .nav-container { padding-top: 110px; }
+      .nav-grid { grid-template-columns: 1fr; }
+    }
+
+    /* ===== 主题切换按钮与浅色主题 ===== */
+    html { color-scheme: dark; }
+    html.light { color-scheme: light; }
+    .theme-btn {
+      background: transparent; border: 1px solid #444; color: #fff;
+      padding: 4px 8px; cursor: pointer; font-size: 0.8rem; letter-spacing: 1px;
+      transition: 0.3s; white-space: nowrap; border-radius: 4px;
+      display: inline-flex; align-items: center; justify-content: center;
+    }
+    .theme-btn:hover { border-color: #d4af37; color: #d4af37; }
+    .theme-btn svg { width: 14px; height: 14px; display: block; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    /* 语言与主题按钮统一规格：等高、无边框透明底、桌面手机完全一致；两按钮间竖线分隔 */
+    .nav-ctrl-group { display: flex; align-items: center; gap: 8px; }
+    .nav-divider { width: 1px; height: 18px; background: #555; }
+    html.light .nav-divider { background: #c2bdb2; }
+    .lang-btn, .theme-btn {
+      height: 30px; padding: 0 6px;
+      display: inline-flex; align-items: center; justify-content: center;
+      border: 0; background: transparent; border-radius: 0;
+    }
+
+    html.light body { background-color: #f7f6f3; color: #26262a; }
+    html.light nav { background: #ffffff; border-bottom-color: #ddd8cf; }
+    html.light .logo { color: #17171a; }
+    html.light .nav-links a { color: #5a5a60; }
+    html.light .lang-btn, html.light .theme-btn { color: #17171a; border-color: #c9c4ba; }
+    html.light .menu-toggle .bar { background-color: #3a3a3e; }
+    html.light .category-title { color: #17171a; }
+    html.light .nav-card { background: #fff; border-color: #ddd8cf; color: #17171a; }
+    html.light .nav-card:hover { box-shadow: 0 8px 20px rgba(0,0,0,0.08); }
+    html.light .compass-icon { stroke: #8a6d1f; }
+    html.light .card-title { color: #17171a; }
+    html.light .card-desc { color: #6a6a70; }
+    html.light .modal-overlay { background: rgba(30,30,30,0.35); }
+    html.light .modal-card { background: #fff; border-color: #e2ddd3; box-shadow: 0 10px 30px rgba(0,0,0,0.15); }
+    html.light .modal-close { color: #8a8a90; }
+    html.light .modal-close:hover { color: #17171a; }
+    html.light .modal-title { color: #17171a; }
+    html.light .modal-desc { color: #4a4a50; }
+    @media (max-width: 1024px) {
+      html.light .nav-links { background-color: #f7f6f3; }
+      html.light .nav-links a { color: #2b2b30; }
+    }
+  </style>
+</head>
+<body>
+  <nav>
+    <a href="index.html" class="logo">YONGJIAN WANG</a>
+    <div class="nav-right-container">
+      <div class="nav-ctrl-group">
+        <button class="theme-btn" onclick="toggleTheme()" id="theme-btn" aria-label="Toggle theme">
+          <svg id="theme-icon" viewBox="0 0 24 24" aria-hidden="true"></svg>
+        </button>
+        <span class="nav-divider" aria-hidden="true"></span>
+        <button class="lang-btn" onclick="toggleLanguage()" id="lang-btn">中</button>
+      </div>
+      <div class="nav-links" id="navLinks">
+        <a href="index.html" id="nav-about">About</a>
+        <a href="gallery.html" id="nav-gallery">Gallery</a>
+        <a href="utility.html" id="nav-utility">Utility</a>
+        <a href="nav.html" class="active" id="nav-nav">Navigation</a>
+      </div>
+      <button class="menu-toggle" id="menuToggle" aria-label="Toggle Menu">
+        <span class="bar"></span>
+        <span class="bar"></span>
+      </button>
+    </div>
+  </nav>
+
+  <main class="nav-container">
+    <h2 class="page-title" id="page-title">Navigation</h2>
+    <!-- 动态内容渲染区域 -->
+    <div id="navigation-content"></div>
+  </main>
+
+  <!-- 详情介绍弹窗结构 -->
+  <div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
+    <div class="modal-card">
+      <button class="modal-close" onclick="closeModalDirect()" aria-label="Close">&times;</button>
+      <div class="modal-header">
+        <svg class="compass-icon" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>
+        <h3 class="modal-title" id="modalTitle">Site Name</h3>
+      </div>
+      <p class="modal-desc" id="modalDesc">Detailed description of the website features will appear here.</p>
+      <div class="modal-footer">
+        <a href="#" target="_blank" rel="noopener noreferrer" class="modal-visit-btn" id="modalVisitBtn">Visit</a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 统一指南针 SVG 图标
+    const compassSvg = `<svg class="compass-icon" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>`;
+
+    // 移动端菜单切换
+    const menuToggle = document.getElementById('menuToggle');
+    const navLinks = document.getElementById('navLinks');
+    menuToggle.addEventListener('click', () => {
+      menuToggle.classList.toggle('active');
+      navLinks.classList.toggle('active');
+    });
+
+    // 导航数据源（已补齐 navUtility 选项）
+    const navData = {
+      en: {
+        pageTitle: 'Navigation',
+        navAbout: 'About',
+        navGallery: 'Gallery',
+        navUtility: 'Utility',
+        navNav: 'Navigation',
+        langBtn: '中',
+        visitBtnText: 'Visit',
+        categories: [
+          {
+            title: "Search Engines",
+            items: [
+              { name: "Google", url: "https://www.google.com", desc: "The world's most popular search engine, delivering fast, relevant web search results, images, news, and specialized information." },
+              { name: "Bing", url: "https://www.bing.com", desc: "Microsoft's AI-powered web search engine integrated with Copilot, offering comprehensive search capabilities and visual insights." },
+              { name: "Baidu", url: "https://www.baidu.com", desc: "China's leading search engine, offering web search, news, maps, encyclopedia (Baike), and localized web services." }
+            ]
+          },
+          {
+            title: "Email Services",
+            items: [
+              { name: "Gmail", url: "https://mail.google.com", desc: "Google's free email service featuring robust spam protection, generous storage, integrated Google Workspace apps, and smart search." },
+              { name: "Outlook", url: "https://outlook.live.com", desc: "Microsoft's webmail and productivity suite offering email, calendar management, contacts, and Office integration." },
+              { name: "Yahoo Mail", url: "https://mail.yahoo.com", desc: "A widely used webmail service providing large storage, customizable themes, news integration, and spam filters." },
+              { name: "QQ Mail", url: "https://mail.qq.com", desc: "Tencent's popular email service integrated with QQ ecosystem, offering large file transfers, online storage, and mobile sync." },
+              { name: "163 Mail", url: "https://mail.163.com", desc: "NetEase's classic email provider in China, known for stable transmission, security protection, and mobile mailbox integration." }
+            ]
+          },
+          {
+            title: "Cloud Storage Services",
+            items: [
+              { name: "iCloud", url: "https://www.icloud.com", desc: "Apple's cloud platform for seamlessly storing, syncing, and accessing photos, files, notes, contacts, and device backups." },
+              { name: "Baidu Wangpan", url: "https://pan.baidu.com", desc: "China's widely used cloud storage platform providing large-capacity online file storage, sharing, and streaming services." },
+              { name: "Google Drive", url: "https://drive.google.com", desc: "Google's cloud storage service offering file backup, real-time document collaboration with Docs, Sheets, and Slides." },
+              { name: "OneDrive", url: "https://onedrive.live.com", desc: "Microsoft's cloud storage service deeply integrated with Windows and Office 365 for seamless file sync and cross-device sharing." },
+              { name: "Tencent Weiyun", url: "https://www.weiyun.com", desc: "Tencent's cloud disk service offering multi-device file synchronization, photo backup, and integration with WeChat/QQ." },
+              { name: "Aliyun Drive", url: "https://www.alipan.com", desc: "Alibaba's high-speed cloud storage platform designed for fast uploads/downloads, HD video playback, and smart file backup." }
+            ]
+          },
+          {
+            title: "Government & Public Sector",
+            items: [
+              { name: "The White House", url: "https://www.whitehouse.gov", desc: "The official website of the Executive Office of the U.S. President, providing news, official statements, administration executive orders, policy updates, and press releases." },
+              { name: "USA.gov", url: "https://www.usa.gov", desc: "The official online portal and guide to U.S. government services, helping public users find federal benefits, agency contact information, passports, and official procedures." },
+              { name: "Data.gov", url: "https://data.gov", desc: "The flagship open data portal of the U.S. government, providing access to hundreds of thousands of datasets across agriculture, climate, energy, and science for research and public applications." },
+              { name: "GOV.UK", url: "https://www.gov.uk", desc: "The central portal for United Kingdom government public services, offering streamlined access to citizenship information, taxes, visas, business regulations, and public policy." }
+            ]
+          },
+          {
+            title: "News & Global Media",
+            items: [
+              { name: "United Nations", url: "https://www.un.org/en/", desc: "The official global website of the UN, providing world news, global reports, peacekeeping missions, sustainable development goals (SDGs), and humanitarian updates." },
+              { name: "BBC News", url: "https://www.bbc.com/news", desc: "A world-renowned news broadcaster delivering objective international news, live breaking coverage, in-depth analysis, global affairs, and documentary features." },
+              { name: "Reuters", url: "https://www.reuters.com", desc: "A premier international news and financial intelligence provider offering real-time market updates, financial analysis, global politics, and investigative reporting." },
+              { name: "Bloomberg", url: "https://www.bloomberg.com", desc: "A global leader in business and financial media, featuring global stock trends, market indices, economic indicators, commodity trading insights, and corporate news." }
+            ]
+          },
+          {
+            title: "AI Assistants",
+            items: [
+              { name: "ChatGPT", url: "https://chatgpt.com", desc: "OpenAI's advanced conversational AI platform capable of creative writing, complex reasoning, code generation, language translation, and multi-domain problem solving." },
+              { name: "Gemini", url: "https://gemini.google.com", desc: "Google's multimodal artificial intelligence model seamlessly integrated with Google Workspace, specializing in real-time information processing, code assistance, and reasoning." },
+              { name: "Claude", url: "https://claude.ai", desc: "Anthropic's high-performance AI assistant recognized for its exceptional long-context processing, ethical alignment, nuanced natural language writing, and coding." },
+              { name: "Grok", url: "https://grok.x.ai", desc: "xAI's AI assistant with real-time access to global social conversations and breaking news trends on the X platform." }
+            ]
+          },
+          {
+            title: "Development & Engineering",
+            items: [
+              { name: "GitHub", url: "https://github.com", desc: "The world's largest open-source code hosting and software development collaboration platform using Git version control." },
+              { name: "AWS", url: "https://aws.amazon.com", desc: "Amazon Web Services official global platform providing cloud computing, EC2, S3 storage, serverless solutions, and enterprise AI." },
+              { name: "Cloudflare", url: "https://dash.cloudflare.com", desc: "A leading global cloud platform offering content delivery network (CDN), DNS resolution, DDoS protection, and edge computing." },
+              { name: "Stack Overflow", url: "https://stackoverflow.com", desc: "The definitive technical Q&A knowledge community where millions of software engineers share solutions to programming bugs, algorithm queries, and architectural challenges." },
+              { name: "LeetCode", url: "https://leetcode.com", desc: "An interactive online coding platform designed to hone technical skills, algorithms, data structures, and prepare for software engineering technical interviews." },
+              { name: "MDN Web Docs", url: "https://developer.mozilla.org", desc: "Mozilla's authoritative web technology documentation, covering comprehensive standards, tutorials, and references for HTML5, CSS3, and JavaScript." }
+            ]
+          },
+          {
+            title: "Education & Research",
+            items: [
+              { name: "Coursera", url: "https://coursera.org", desc: "A global online learning platform offering university-level accredited courses, professional certificates, and degree programs from leading institutions." },
+              { name: "arXiv", url: "https://arxiv.org", desc: "A free distribution service and open-access archive for academic preprints in physics, mathematics, computer science, quantitative biology, and statistics." },
+              { name: "Google Scholar", url: "https://scholar.google.com", desc: "A freely accessible search engine indexing full text or metadata of scholarly literature across digital disciplines and academic publishing formats." }
+            ]
+          },
+          {
+            title: "Design & Inspiration",
+            items: [
+              { name: "Figma", url: "https://figma.com", desc: "A vector graphics editor and prototyping tool that is primarily web-based, enabling real-time collaborative UI/UX product design." },
+              { name: "Unsplash", url: "https://unsplash.com", desc: "A platform powered by a community that has shared hundreds of thousands of high-resolution, freely usable royalty-free photographs." },
+              { name: "500px", url: "https://500px.com", desc: "A premier global network for creative photographers to share high-grade photography portfolios, discover inspiration, and license visual content." }
+            ]
+          }
+        ]
+      },
+      zh: {
+        pageTitle: '网址导航',
+        navAbout: '个人介绍',
+        navGallery: '照片展示',
+        navUtility: '实用工具',
+        navNav: '网址导航',
+        langBtn: 'EN',
+        visitBtnText: '访问',
+        categories: [
+          {
+            title: "搜索引擎",
+            items: [
+              { name: "Google", url: "https://www.google.com", desc: "全球最大的搜索引擎，提供精准的网络网页搜索、图片搜索、学术文献及全球资讯检索。" },
+              { name: "微软 Bing", url: "https://www.bing.com", desc: "微软推出的智能搜索引擎，深度融合 Copilot AI 问答，提供高质量的全球搜索与视觉检索服务。" },
+              { name: "百度 Baidu", url: "https://www.baidu.com", desc: "国内领先的搜索引擎与综合互联网服务平台，涵盖网页搜索、资讯、地图、百科及贴吧等本土服务。" }
+            ]
+          },
+          {
+            title: "电子邮箱服务",
+            items: [
+              { name: "Gmail", url: "https://mail.google.com", desc: "谷歌提供的免费电子邮箱服务，拥有强大的反垃圾邮件系统、大容量存储空间及与 Google 生态紧密结合的协同工具。" },
+              { name: "Outlook 邮箱", url: "https://outlook.live.com", desc: "微软旗下的免费网络邮箱与高效办公套装，集成邮件收发、日历日程管理、联系人及 Microsoft 365 协作。" },
+              { name: "Yahoo Mail", url: "https://mail.yahoo.com", desc: "雅虎提供的国际化 Web 邮箱服务，具备超大存储空间、个性化主题设置与即时资讯集成。" },
+              { name: "QQ 邮箱", url: "https://mail.qq.com", desc: "腾讯公司推出的高效邮箱服务，支持超大附件收发、网络书签、文件中转站及微信/QQ 即时提醒绑定。" },
+              { name: "163 网易邮箱", url: "https://mail.163.com", desc: "网易公司旗下的中文电子邮箱服务，以稳定顺畅的邮件收发、高安全防护及便捷的移动邮箱应用著称。" }
+            ]
+          },
+          {
+            title: "云存储与网盘",
+            items: [
+              { name: "iCloud", url: "https://www.icloud.com.cn", desc: "苹果公司提供的云端服务，实现 iPhone、Mac 等设备间照片、文档、通讯录及备份数据的无缝云端同步。" },
+              { name: "百度网盘", url: "https://pan.baidu.com", desc: "国内使用广泛的个人云存储平台，提供海量文件在线备份、云端提取、跨设备共享及高清视频在线播放。" },
+              { name: "Google Drive", url: "https://drive.google.com", desc: "谷歌云端硬盘，提供云端文件存储与备份，支持在线协作编辑文档、表格及演示文稿。" },
+              { name: "OneDrive", url: "https://onedrive.live.com", desc: "微软推出的云存储服务，与 Windows 系统及 Office 办公软件深度集成，方便跨设备协同办公。" },
+              { name: "腾讯微云", url: "https://www.weiyun.com", desc: "腾讯打造的智能云存储服务，支持多端文件备份同步、智能照片分类以及微信/QQ 文件的云端转存。" },
+              { name: "阿里云盘", url: "https://www.alipan.com", desc: "阿里巴巴推出的极速个人网盘，主打高速上传下载、高清视频在线播放、智能相册管理及文件加密传输。" }
+            ]
+          },
+          {
+            title: "政府与公共服务",
+            items: [
+              { name: "中国政府网", url: "https://www.gov.cn", desc: "中华人民共和国中央人民政府官方门户网站，发布国家权威政策文件、国务院新闻发布会内容、政务要闻及公共便民服务指南。" },
+              { name: "国家政务服务平台", url: "http://gjzwfw.www.gov.cn", desc: "全国一体化在线政务服务总入口，提供跨地区、跨部门的一站式行政审批、电子证照查验及政务事项综合办理。" },
+              { name: "外交部官网", url: "https://www.mfa.gov.cn", desc: "中华人民共和国外交部官方网站，发布中国外交政策、外交领事新闻、领事保护提醒及对外事务权威表态。" },
+              { name: "国家发改委", url: "https://www.ndrc.gov.cn", desc: "中华人民共和国国家发展和改革委员会官网，发布国家经济社会发展规划、重大项目建设及宏观调控政策。" }
+            ]
+          },
+          {
+            title: "新闻与资讯",
+            items: [
+              { name: "联合国官网", url: "https://www.un.org/zh/", desc: "联合国官方中文门户，全面报道国际维和行动、全球人道主义援助、可持续发展议程及国际法治进展。" },
+              { name: "新华网", url: "http://www.xinhuanet.com", desc: "中国最具影响力的国家级重点新闻网站之一，全天候报道国内外重大时政事件、经济动态与社会热点。" },
+              { name: "人民网", url: "http://www.people.com.cn", desc: "权威综合性新闻媒体平台，聚焦中国政策解读、时政要闻、深度评论以及民生诉求互动。" },
+              { name: "央视网", url: "https://www.cctv.com", desc: "中央广播电视总台官方新闻网站，提供高品质视频新闻直播、电视精品节目点播及重大赛事活动转播。" }
+            ]
+          },
+          {
+            title: "AI 智能助手",
+            items: [
+              { name: "DeepSeek", url: "https://www.deepseek.com", desc: "高性能开源大语言模型，擅长复杂推理、高难度代码编写、数学逻辑演算以及中文深度理解与创作。" },
+              { name: "通义千问", url: "https://tongyi.aliyun.com", desc: "阿里云推出的全能型大语言模型，具备多模态理解、长文档分析、智能写作与个性化问答能力。" },
+              { name: "豆包", url: "https://www.doubao.com", desc: "字节跳动旗下的 AI 智能助手，界面清爽，支持灵活语音对话、灵感写作、翻译以及文案策划。" },
+              { name: "Kimi", url: "https://kimi.moonshot.cn", desc: "月之暗面推出的长文本 AI 助手，支持数十万字长篇研报、图书及长代码文件的深度解析与总结。" }
+            ]
+          },
+          {
+            title: "开发与技术",
+            items: [
+              { name: "GitHub", url: "https://github.com", desc: "全球最大的开源代码托管与软件协作平台，拥有数千万开发者社区、丰富的代码库与自动化工作流工具。" },
+              { name: "AWS 亚马逊云", url: "https://www.amazonaws.cn", desc: "亚马逊云科技中国区官方网站（由光环新网/西云数据运营），为本土及外资企业提供合规的高性能云计算与基础设施服务。" },
+              { name: "Cloudflare", url: "https://dash.cloudflare.com", desc: "全球顶尖的网络性能与安全控制台，提供免费 CDN 加速、高防 DNS 解析、DDoS 防护及 Workers 边缘计算服务。" },
+              { name: "Gitee (码云)", url: "https://gitee.com", desc: "国内领先的代码托管与研发协作平台，提供极速的 Git 仓库服务、敏捷项目管理以及企业级 DevSecOps 工具链。" },
+              { name: "掘金", url: "https://juejin.cn", desc: "面向前沿开发者的优质技术社区，涵盖前端、后端、人工智能、架构设计等领域的实战干货与技术分享。" },
+              { name: "Runoob 菜鸟教程", url: "https://www.runoob.com", desc: "通俗易懂的编程入门学习网站，提供 Python、HTML/CSS、JavaScript、Java 等多种语言的免费在线练习与查阅手册。" }
+            ]
+          },
+          {
+            title: "教育与学术",
+            items: [
+              { name: "中国大学 MOOC", url: "https://www.icourse163.org", desc: "国家精品在线开放课程平台，汇聚国内顶尖高校的优质在线课程，涵盖理工、人文、经济等多学科认证课程。" },
+              { name: "知网 CNKI", url: "https://www.cnki.net", desc: "中国权威的学术文献知识发现平台，提供海量期刊论文、博硕士学位论文、会议论文及专利的查重与检索服务。" },
+              { name: "Bilibili (学习区)", url: "https://www.bilibili.com", desc: "国内年轻人极具活力的知识学习与视频分享社区，拥有海量优质的编程教程、公开课、演讲与考研资料。" }
+            ]
+          },
+          {
+            title: "设计与社区",
+            items: [
+              { name: "站酷 ZCOOL", url: "https://www.zcool.com.cn", desc: "中国顶尖的设计师创作交流平台，展示平面设计、UI/UE 界面、三维渲染及插画动漫等优秀原创作品。" },
+              { name: "花瓣网", url: "https://huaban.com", desc: "灵感收集与设计素材整理工具，帮助用户随时随地采集、分类和分享图片灵感与视觉素材。" },
+              { name: "少数派 sspai", url: "https://sspai.com", desc: "关注高效工作方式与数字生活的专业内容社区，提供硬件评测、软件应用技巧、个人工作流搭建等精品文章。" }
+            ]
+          }
+        ]
+      }
+    };
+
+    let currentLang = 'en';
+
+    // 渲染导航内容
+    function renderNav() {
+      const data = navData[currentLang];
+
+      document.getElementById('nav-about').innerText = data.navAbout;
+      document.getElementById('nav-gallery').innerText = data.navGallery;
+      document.getElementById('nav-utility').innerText = data.navUtility;
+      document.getElementById('nav-nav').innerText = data.navNav;
+      document.getElementById('lang-btn').innerText = data.langBtn;
+      document.getElementById('page-title').innerText = data.pageTitle;
+
+      const container = document.getElementById('navigation-content');
+      container.innerHTML = '';
+
+      data.categories.forEach(cat => {
+        const section = document.createElement('div');
+        section.className = 'category-section';
+
+        let gridHtml = `<h3 class="category-title">${cat.title}</h3><div class="nav-grid">`;
+
+        cat.items.forEach(item => {
+          const nameEscaped = item.name.replace(/'/g, "\\'");
+          const descEscaped = item.desc.replace(/'/g, "\\'");
+
+          gridHtml += `
+            <div class="nav-card" onclick="openModal('${nameEscaped}', '${descEscaped}', '${item.url}')">
+              <div class="card-header">
+                ${compassSvg}
+                <span class="card-title">${item.name}</span>
+              </div>
+              <p class="card-desc">${item.desc}</p>
+            </div>
+          `;
+        });
+
+        gridHtml += `</div>`;
+        section.innerHTML = gridHtml;
+        container.appendChild(section);
+      });
+    }
+
+    // 弹窗打开控制
+    function openModal(title, desc, url) {
+      const modalOverlay = document.getElementById('modalOverlay');
+      const modalTitle = document.getElementById('modalTitle');
+      const modalDesc = document.getElementById('modalDesc');
+      const modalVisitBtn = document.getElementById('modalVisitBtn');
+
+      modalTitle.innerText = title;
+      modalDesc.innerText = desc;
+      modalVisitBtn.href = url;
+      modalVisitBtn.innerText = navData[currentLang].visitBtnText;
+
+      modalOverlay.classList.add('active');
+    }
+
+    // 弹窗关闭控制（点击背景关闭）
+    function closeModal(e) {
+      if (e.target.id === 'modalOverlay') {
+        closeModalDirect();
+      }
+    }
+
+    // 直接关闭弹窗
+    function closeModalDirect() {
+      document.getElementById('modalOverlay').classList.remove('active');
+    }
+
+    // 监听 ESC 按键关闭弹窗
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeModalDirect();
+    });
+
+    // 切换语言
+    function toggleLanguage() {
+      currentLang = currentLang === 'en' ? 'zh' : 'en';
+      renderNav();
+    }
+
+    // 页面初始化加载
+    renderNav();
+
+    /* ===== 深浅色主题：与全站共用 yw_calc_theme 键，默认跟随系统 ===== */
+    const THEME_SUN = '<circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path>';
+    const THEME_MOON = '<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"></path>';
+    function siteTheme() {
+      let saved = null;
+      try { saved = localStorage.getItem('yw_calc_theme'); } catch (e) { /* 忽略 */ }
+      if (saved === 'light' || saved === 'dark') return saved;
+      return (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) ? 'light' : 'dark';
+    }
+    function applySiteTheme(mode) {
+      document.documentElement.classList.toggle('light', mode === 'light');
+      const icon = document.getElementById('theme-icon');
+      if (icon) icon.innerHTML = (mode === 'light') ? THEME_MOON : THEME_SUN;
+      const meta = document.querySelector('meta[name="theme-color"]');
+      if (meta) meta.setAttribute('content', mode === 'light' ? '#f7f6f3' : '#0b0b0b');
+    }
+    function toggleTheme() {
+      const next = document.documentElement.classList.contains('light') ? 'dark' : 'light';
+      try { localStorage.setItem('yw_calc_theme', next); } catch (e) { /* 忽略 */ }
+      applySiteTheme(next);
+    }
+    applySiteTheme(siteTheme());
+    if (window.matchMedia) {
+      window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', (e) => {
+        let saved = null;
+        try { saved = localStorage.getItem('yw_calc_theme'); } catch (err) { /* 忽略 */ }
+        if (saved !== 'light' && saved !== 'dark') applySiteTheme(e.matches ? 'light' : 'dark');
+      });
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Yongjian Wang | Personal Profile</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background-color: #0b0b0b;
+      color: #f4f4f4;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* 导航栏基础布局 */
+    nav {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 1.2rem 5%; background: #0b0b0b;
+      position: fixed; width: 100%; top: 0; z-index: 100; border-bottom: 1px solid #333;
+    }
+    .logo { font-size: 1.4rem; letter-spacing: 3px; font-weight: bold; color: #fff; text-transform: uppercase; text-decoration: none; transition: 0.3s; white-space: nowrap; }
+    .logo:hover { color: #d4af37; }
+
+    /* 桌面端右侧导航容器 */
+    .nav-right-container {
+      display: flex;
+      align-items: center;
+      gap: 2.5rem;
+    }
+
+    .nav-links { display: flex; gap: 2rem; align-items: center; }
+    .nav-links a { color: #aaa; text-decoration: none; letter-spacing: 2px; font-size: 0.9rem; transition: 0.3s; white-space: nowrap; }
+    .nav-links a:hover, .nav-links a.active { color: #d4af37; }
+
+    .lang-btn {
+      background: transparent;
+      border: 1px solid #444;
+      color: #fff;
+      padding: 4px 10px;
+      cursor: pointer;
+      font-size: 0.8rem;
+      letter-spacing: 1px;
+      transition: 0.3s;
+      white-space: nowrap;
+      border-radius: 4px;
+    }
+    .lang-btn:hover { border-color: #d4af37; color: #d4af37; }
+
+    /* Apple 官网精细化汉堡包按钮 */
+    .menu-toggle {
+      display: none; position: relative;
+      width: 18px; height: 18px;
+      background: transparent; border: none; cursor: pointer; padding: 0; z-index: 101;
+    }
+    .menu-toggle .bar {
+      position: absolute; left: 0;
+      width: 100%; height: 2px;
+      background-color: #e5e5e5; border-radius: 1px;
+      transition: transform 0.35s cubic-bezier(0.52, 0.16, 0.52, 0.84), top 0.35s cubic-bezier(0.52, 0.16, 0.52, 0.84);
+    }
+
+    /* 初始静止状态：上下两杠 */
+    .menu-toggle .bar:nth-child(1) { top: 4px; }
+    .menu-toggle .bar:nth-child(2) { top: 12px; }
+
+    /* 激活状态：向中心收聚重合，再旋转 45° 交叉成 X */
+    .menu-toggle.active .bar:nth-child(1) {
+      top: 8px;
+      transform: rotate(45deg);
+    }
+    .menu-toggle.active .bar:nth-child(2) {
+      top: 8px;
+      transform: rotate(-45deg);
+    }
+
+    /* 📱 移动端响应式布局 */
+    @media (max-width: 1024px) {
+      nav { padding: 1.1rem 6%; }
+      .logo { font-size: 1.1rem; letter-spacing: 2px; }
+
+      .nav-right-container { gap: 16px; }
+
+      .menu-toggle { display: block; }
+
+      /* 移动端全屏 Apple 风格抽屉 */
+      .nav-links {
+        position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+        background-color: #0b0b0b;
+        flex-direction: column; align-items: flex-start; justify-content: flex-start;
+        padding: 100px 10% 40px 10%; gap: 24px;
+        opacity: 0; visibility: hidden; pointer-events: none;
+        transition: opacity 0.35s cubic-bezier(0.52, 0.16, 0.24, 1), visibility 0.35s ease;
+        z-index: 99;
+      }
+      .nav-links.active { opacity: 1; visibility: visible; pointer-events: auto; }
+
+      /* 移动端菜单大字号与隐藏状态（向上偏移） */
+      .nav-links a {
+        font-size: 1.65rem; font-weight: 600; letter-spacing: 1.5px;
+        color: #e5e5e5; width: 100%; display: block; padding: 4px 0;
+        opacity: 0;
+        transform: translateY(-20px);
+        transition: opacity 0.4s cubic-bezier(0.52, 0.16, 0.24, 1), transform 0.4s cubic-bezier(0.52, 0.16, 0.24, 1), color 0.3s;
+      }
+
+      /* 激活时滑入并按延迟递增铺开 */
+      .nav-links.active a {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      .nav-links.active a:nth-child(1) { transition-delay: 0.1s; }
+      .nav-links.active a:nth-child(2) { transition-delay: 0.16s; }
+      .nav-links.active a:nth-child(3) { transition-delay: 0.22s; }
+      .nav-links.active a:nth-child(4) { transition-delay: 0.28s; }
+
+      .nav-links a:hover, .nav-links a.active { color: #d4af37; }
+    }
+
+    /* 主内容布局 */
+    .container {
+      flex: 1;
+      padding: 140px 5% 60px 5%;
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      gap: 50px;
+      align-items: center;
+      justify-content: center;
+    }
+    .profile-img-container { flex: 1; max-width: 450px; text-align: center; }
+    .profile-img { width: 100%; max-width: 380px; border-radius: 8px; border: 1px solid #222; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+
+    .bio-container { flex: 1.2; }
+    .bio-title { font-size: 2.2rem; margin-bottom: 20px; letter-spacing: 2px; color: #fff; }
+    .bio-subtitle { font-size: 1.1rem; color: #d4af37; margin-bottom: 25px; letter-spacing: 1px; }
+    .bio-text { line-height: 1.8; color: #ccc; margin-bottom: 20px; font-size: 1rem; }
+
+    /* 按钮组 */
+    .btn-group {
+      display: flex;
+      gap: 15px;
+      margin-top: 15px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: #aaa;
+      text-decoration: none;
+      font-size: 0.95rem;
+      letter-spacing: 1.5px;
+      padding: 8px 20px;
+      border: 1px solid #333;
+      border-radius: 20px;
+      background: transparent;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.3s ease;
+    }
+    .btn:hover {
+      color: #fff;
+      border-color: #d4af37;
+      background: rgba(212, 175, 55, 0.05);
+      transform: translateY(-2px);
+    }
+    .github-icon, .contact-icon { width: 18px; height: 18px; fill: currentColor; }
+
+    @media (max-width: 900px) {
+      .container { flex-direction: column; padding-top: 110px; padding-bottom: 40px; gap: 25px; text-align: center; }
+      .profile-img-container { max-width: 100%; }
+      .profile-img { max-width: 280px; }
+      .bio-title { font-size: 1.8rem; }
+      .btn-group { justify-content: center; }
+    }
+
+    /* 模态弹窗通用样式 */
+    .modal-overlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(5px);
+      display: flex; justify-content: center; align-items: center;
+      z-index: 1000; opacity: 0; visibility: hidden;
+      transition: all 0.3s ease;
+    }
+    .modal-overlay.active { opacity: 1; visibility: visible; }
+    .modal-content {
+      background: #141414; border: 1px solid #333; border-radius: 12px;
+      padding: 30px; width: 90%; max-width: 420px;
+      position: relative; transform: translateY(20px);
+      transition: transform 0.3s ease; box-shadow: 0 15px 35px rgba(0,0,0,0.6);
+    }
+    .modal-overlay.active .modal-content { transform: translateY(0); }
+    .close-btn { position: absolute; top: 15px; right: 20px; background: none; border: none; color: #888; font-size: 1.5rem; cursor: pointer; transition: color 0.3s; }
+    .close-btn:hover { color: #d4af37; }
+    .modal-title { font-size: 1.4rem; color: #fff; margin-bottom: 20px; border-bottom: 1px solid #222; padding-bottom: 10px; letter-spacing: 1px; }
+    .contact-item { display: flex; flex-direction: column; gap: 5px; margin-bottom: 18px; text-align: left; }
+    .contact-label { font-size: 0.85rem; color: #d4af37; letter-spacing: 1px; }
+    .contact-value { font-size: 1.05rem; color: #eee; text-decoration: none; word-break: break-all; }
+    .contact-value:hover { text-decoration: underline; color: #fff; }
+
+    /* GitHub 跳转弹窗特定样式 */
+    .modal-desc { font-size: 0.95rem; color: #ccc; line-height: 1.6; margin-bottom: 24px; text-align: left; }
+    .modal-footer { display: flex; justify-content: flex-end; }
+    .modal-visit-btn {
+      background: #d4af37; color: #000; font-weight: 600; padding: 8px 22px;
+      border-radius: 6px; text-decoration: none; font-size: 0.9rem;
+      letter-spacing: 1px; transition: all 0.2s ease; display: inline-flex; align-items: center;
+    }
+    .modal-visit-btn:hover { background: #f0c848; transform: translateY(-1px); }
+
+    /* ===== 主题切换按钮与浅色主题 ===== */
+    html { color-scheme: dark; }
+    html.light { color-scheme: light; }
+    .theme-btn {
+      background: transparent; border: 1px solid #444; color: #fff;
+      padding: 4px 8px; cursor: pointer; font-size: 0.8rem; letter-spacing: 1px;
+      transition: 0.3s; white-space: nowrap; border-radius: 4px;
+      display: inline-flex; align-items: center; justify-content: center;
+    }
+    .theme-btn:hover { border-color: #d4af37; color: #d4af37; }
+    .theme-btn svg { width: 14px; height: 14px; display: block; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    /* 语言按钮：宽屏显示全称，窄屏（手机）显示单字防止与主题按钮挤叠 */
+    /* 语言与主题按钮统一规格：等高、无边框透明底、桌面手机完全一致；两按钮间竖线分隔 */
+    .nav-ctrl-group { display: flex; align-items: center; gap: 8px; }
+    .nav-divider { width: 1px; height: 18px; background: #555; }
+    html.light .nav-divider { background: #c2bdb2; }
+    .lang-btn, .theme-btn {
+      height: 30px; padding: 0 6px;
+      display: inline-flex; align-items: center; justify-content: center;
+      border: 0; background: transparent; border-radius: 0;
+    }
+
+    /* 浅色主题覆盖（桌面与手机共用） */
+    html.light body { background-color: #f7f6f3; color: #26262a; }
+    html.light nav { background: #ffffff; border-bottom-color: #ddd8cf; }
+    html.light .logo { color: #17171a; }
+    html.light .nav-links a { color: #5a5a60; }
+    html.light .lang-btn, html.light .theme-btn { color: #17171a; border-color: #c9c4ba; }
+    html.light .menu-toggle .bar { background-color: #3a3a3e; }
+    html.light .profile-img { border-color: #ddd8cf; box-shadow: 0 10px 30px rgba(0,0,0,0.12); }
+    html.light .bio-title { color: #17171a; }
+    html.light .bio-text { color: #4a4a50; }
+    html.light .btn { color: #4a4a50; border-color: #c9c4ba; }
+    html.light .btn:hover { color: #17171a; background: rgba(212,175,55,0.08); }
+    html.light .modal-overlay { background: rgba(30,30,30,0.35); }
+    html.light .modal-content { background: #fff; border-color: #e2ddd3; box-shadow: 0 15px 35px rgba(0,0,0,0.15); }
+    html.light .close-btn { color: #8a8a90; }
+    html.light .modal-title { color: #17171a; border-bottom-color: #e8e4db; }
+    html.light .contact-value { color: #333338; }
+    html.light .contact-value:hover { color: #000; }
+    html.light .modal-desc { color: #4a4a50; }
+    @media (max-width: 1024px) {
+      html.light .nav-links { background-color: #f7f6f3; }
+      html.light .nav-links a { color: #2b2b30; }
+    }
+  </style>
+</head>
+<body>
+  <nav>
+    <a href="index.html" class="logo">YONGJIAN WANG</a>
+
+    <div class="nav-right-container">
+      <div class="nav-ctrl-group">
+        <button class="theme-btn" onclick="toggleTheme()" id="theme-btn" aria-label="Toggle theme">
+          <svg id="theme-icon" viewBox="0 0 24 24" aria-hidden="true"></svg>
+        </button>
+        <span class="nav-divider" aria-hidden="true"></span>
+        <button class="lang-btn" onclick="toggleLanguage()" id="lang-btn">中</button>
+      </div>
+
+      <div class="nav-links" id="navLinks">
+        <a href="index.html" class="active" id="nav-about">About</a>
+        <a href="gallery.html" id="nav-gallery">Gallery</a>
+        <a href="utility.html" id="nav-utility">Utility</a>
+        <a href="nav.html" id="nav-nav">Navigation</a>
+      </div>
+
+      <button class="menu-toggle" id="menuToggle" aria-label="Toggle Menu">
+        <span class="bar"></span>
+        <span class="bar"></span>
+      </button>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="profile-img-container">
+      <img src="IMG_4826.jpeg" alt="Yongjian Wang" class="profile-img">
+    </div>
+    <div class="bio-container">
+      <h1 class="bio-title" id="bio-title">Hello, I'm Yongjian Wang</h1>
+      <p class="bio-subtitle" id="bio-subtitle">Welcome to my personal website</p>
+      <p class="bio-text" id="bio-p1">I am passionate about technology, photography, and exploring the world. This platform is a place where I share my journey, thoughts, and visual stories.</p>
+      <p class="bio-text" id="bio-p2">Feel free to explore my gallery to see moments captured through my lens, or connect with me via GitHub.</p>
+
+      <div class="btn-group">
+        <button class="btn" onclick="openGithubModal()">
+          <svg class="github-icon" viewBox="0 0 24 24">
+            <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
+          </svg>
+          <span>GitHub</span>
+        </button>
+
+        <button class="btn" onclick="openContactModal()">
+          <svg class="contact-icon" viewBox="0 0 24 24">
+            <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/>
+          </svg>
+          <span id="contact-btn-text">Contact Me</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="contactModal" onclick="closeContactModal(event)">
+    <div class="modal-content" onclick="event.stopPropagation()">
+      <button class="close-btn" onclick="closeContactModal()">&times;</button>
+      <h2 class="modal-title" id="modal-title">Contact Information</h2>
+
+      <div class="contact-item">
+        <span class="contact-label" id="label-phone">Phone</span>
+        <a href="tel:+8618515370926" class="contact-value">+86 18515370926</a>
+      </div>
+
+      <div class="contact-item">
+        <span class="contact-label" id="label-email">Email</span>
+        <a href="mailto:wyj20060926@icloud.com" class="contact-value">wyj20060926@icloud.com</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="githubModal" onclick="closeGithubModal(event)">
+    <div class="modal-content" onclick="event.stopPropagation()">
+      <button class="close-btn" onclick="closeGithubModal()">&times;</button>
+      <h2 class="modal-title" id="gh-modal-title">GitHub Overview</h2>
+      <p class="modal-desc" id="gh-modal-desc">You are about to visit Yongjian Wang's GitHub Overview page.</p>
+      <div class="modal-footer">
+        <a href="https://github.com/yongjian0926" target="_blank" rel="noopener noreferrer" class="modal-visit-btn" id="gh-visit-btn" onclick="closeGithubModal()">Visit</a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 菜单展开/收起逻辑
+    const menuToggle = document.getElementById('menuToggle');
+    const navLinks = document.getElementById('navLinks');
+    menuToggle.addEventListener('click', () => {
+      menuToggle.classList.toggle('active');
+      navLinks.classList.toggle('active');
+    });
+
+    // 联系方式弹窗函数
+    function openContactModal() {
+      document.getElementById('contactModal').classList.add('active');
+    }
+    function closeContactModal(e) {
+      if (!e || e.target === document.getElementById('contactModal') || e.target.classList.contains('close-btn')) {
+        document.getElementById('contactModal').classList.remove('active');
+      }
+    }
+
+    // GitHub 弹窗函数
+    function openGithubModal() {
+      document.getElementById('githubModal').classList.add('active');
+    }
+    function closeGithubModal(e) {
+      if (!e || e.target === document.getElementById('githubModal') || e.target.classList.contains('close-btn') || e.target.id === 'gh-visit-btn') {
+        document.getElementById('githubModal').classList.remove('active');
+      }
+    }
+
+    // 语言切换逻辑与多语言字典
+    let currentLang = 'en';
+    const i18n = {
+      en: {
+        navAbout: 'About',
+        navGallery: 'Gallery',
+        navUtility: 'Utility',
+        navNav: 'Navigation',
+        langBtn: '中',
+        title: "Hello, I'm Yongjian Wang",
+        subtitle: 'Welcome to my personal website',
+        p1: 'I am passionate about technology, photography, and exploring the world. This platform is a place where I share my journey, thoughts, and visual stories.',
+        p2: 'Feel free to explore my gallery to see moments captured through my lens, or connect with me via GitHub.',
+        contactBtn: 'Contact Me',
+        modalTitle: 'Contact Information',
+        labelPhone: 'PHONE',
+        labelEmail: 'EMAIL',
+        ghModalTitle: 'GitHub Overview',
+        ghModalDesc: "You are about to visit Yongjian Wang's GitHub Overview page.",
+        ghVisitBtn: 'Visit'
+      },
+      zh: {
+        navAbout: '个人介绍',
+        navGallery: '照片展示',
+        navUtility: '实用工具',
+        navNav: '网址导航',
+        langBtn: 'EN',
+        title: '你好，我是王涌鉴',
+        subtitle: '欢迎访问我的个人网站',
+        p1: '我热衷于技术、摄影与探索世界。这里是我分享个人历程、思考以及视觉故事的空间。',
+        p2: '欢迎浏览我的照片画廊查看镜头下的精彩瞬间，或通过下方按钮与我保持联系。',
+        contactBtn: '与我联络',
+        modalTitle: '联络方式',
+        labelPhone: '电话',
+        labelEmail: '电子邮件',
+        ghModalTitle: 'GitHub 概览页',
+        ghModalDesc: '您即将访问“王涌鉴”的 GitHub 概览页。',
+        ghVisitBtn: '访问'
+      }
+    };
+
+    function toggleLanguage() {
+      currentLang = currentLang === 'en' ? 'zh' : 'en';
+      const t = i18n[currentLang];
+
+      // 导航与主界面更新
+      document.getElementById('nav-about').innerText = t.navAbout;
+      document.getElementById('nav-gallery').innerText = t.navGallery;
+      document.getElementById('nav-utility').innerText = t.navUtility;
+      document.getElementById('nav-nav').innerText = t.navNav;
+      document.getElementById('lang-btn').innerText = t.langBtn;
+      document.getElementById('bio-title').innerText = t.title;
+      document.getElementById('bio-subtitle').innerText = t.subtitle;
+      document.getElementById('bio-p1').innerText = t.p1;
+      document.getElementById('bio-p2').innerText = t.p2;
+
+      // 联系方式弹窗文本更新
+      document.getElementById('contact-btn-text').innerText = t.contactBtn;
+      document.getElementById('modal-title').innerText = t.modalTitle;
+      document.getElementById('label-phone').innerText = t.labelPhone;
+      document.getElementById('label-email').innerText = t.labelEmail;
+
+      // GitHub 确认弹窗文本更新
+      document.getElementById('gh-modal-title').innerText = t.ghModalTitle;
+      document.getElementById('gh-modal-desc').innerText = t.ghModalDesc;
+      document.getElementById('gh-visit-btn').innerText = t.ghVisitBtn;
+    }
+
+    /* ===== 深浅色主题：与全站共用 yw_calc_theme 键，默认跟随系统 ===== */
+    const THEME_SUN = '<circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path>';
+    const THEME_MOON = '<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"></path>';
+    function siteTheme() {
+      let saved = null;
+      try { saved = localStorage.getItem('yw_calc_theme'); } catch (e) { /* 忽略 */ }
+      if (saved === 'light' || saved === 'dark') return saved;
+      return (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) ? 'light' : 'dark';
+    }
+    function applySiteTheme(mode) {
+      document.documentElement.classList.toggle('light', mode === 'light');
+      const icon = document.getElementById('theme-icon');
+      if (icon) icon.innerHTML = (mode === 'light') ? THEME_MOON : THEME_SUN;
+      const meta = document.querySelector('meta[name="theme-color"]');
+      if (meta) meta.setAttribute('content', mode === 'light' ? '#f7f6f3' : '#0b0b0b');
+    }
+    function toggleTheme() {
+      const next = document.documentElement.classList.contains('light') ? 'dark' : 'light';
+      try { localStorage.setItem('yw_calc_theme', next); } catch (e) { /* 忽略 */ }
+      applySiteTheme(next);
+    }
+    applySiteTheme(siteTheme());
+    if (window.matchMedia) {
+      window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', (e) => {
+        let saved = null;
+        try { saved = localStorage.getItem('yw_calc_theme'); } catch (err) { /* 忽略 */ }
+        if (saved !== 'light' && saved !== 'dark') applySiteTheme(e.matches ? 'light' : 'dark');
+      });
+    }
+  </script>
+</body>
+</html>

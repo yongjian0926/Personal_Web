@@ -1,0 +1,2918 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Utility | Yongjian Wang</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    /* 连点按钮（如秒表 Lap）会被 iOS 识别为双击缩放手势导致整页放大；
+       manipulation 关闭双击缩放，同时保留滚动与双指捏合缩放 */
+    button, a, .tool-card { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+    body {
+      background-color: #0b0b0b;
+      color: #f4f4f4;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* 顶部导航栏 */
+    nav {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 1.2rem 5%; background: #0b0b0b;
+      position: fixed; width: 100%; top: 0; z-index: 100; border-bottom: 1px solid #333;
+    }
+    .logo { font-size: 1.4rem; letter-spacing: 3px; font-weight: bold; color: #fff; text-transform: uppercase; text-decoration: none; transition: 0.3s; white-space: nowrap; }
+    @media (hover: hover) and (pointer: fine) {
+      .logo:hover { color: #d4af37; }
+    }
+
+    .nav-right-container { display: flex; align-items: center; gap: 2.5rem; }
+    .nav-links { display: flex; gap: 2rem; align-items: center; }
+    .nav-links a { color: #aaa; text-decoration: none; letter-spacing: 2px; font-size: 0.9rem; transition: 0.3s; white-space: nowrap; }
+    .nav-links a.active { color: #d4af37; }
+    @media (hover: hover) and (pointer: fine) {
+      .nav-links a:hover { color: #d4af37; }
+    }
+
+    .lang-btn {
+      background: transparent; border: 1px solid #444; color: #fff;
+      padding: 4px 10px; cursor: pointer; font-size: 0.8rem; letter-spacing: 1px;
+      transition: 0.3s; white-space: nowrap; border-radius: 4px;
+    }
+    @media (hover: hover) and (pointer: fine) {
+      .lang-btn:hover { border-color: #d4af37; color: #d4af37; }
+    }
+
+    .menu-toggle {
+      display: none; position: relative; width: 18px; height: 18px;
+      background: transparent; border: none; cursor: pointer; padding: 0; z-index: 101;
+    }
+    .menu-toggle .bar {
+      position: absolute; left: 0; width: 100%; height: 2px;
+      background-color: #e5e5e5; border-radius: 1px;
+      transition: transform 0.35s cubic-bezier(0.52, 0.16, 0.52, 0.84), top 0.35s cubic-bezier(0.52, 0.16, 0.52, 0.84);
+    }
+    .menu-toggle .bar:nth-child(1) { top: 4px; }
+    .menu-toggle .bar:nth-child(2) { top: 12px; }
+    .menu-toggle.active .bar:nth-child(1) { top: 8px; transform: rotate(45deg); }
+    .menu-toggle.active .bar:nth-child(2) { top: 8px; transform: rotate(-45deg); }
+
+    @media (max-width: 1024px) {
+      nav { padding: 1.1rem 6%; }
+      .logo { font-size: 1.1rem; letter-spacing: 2px; }
+      .nav-right-container { gap: 16px; }
+      .menu-toggle { display: block; }
+      .nav-links {
+        position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+        background-color: #0b0b0b; flex-direction: column; align-items: flex-start; justify-content: flex-start;
+        padding: 100px 10% 40px 10%; gap: 24px; opacity: 0; visibility: hidden; pointer-events: none;
+        transition: opacity 0.35s cubic-bezier(0.52, 0.16, 0.24, 1), visibility 0.35s ease; z-index: 99;
+      }
+      .nav-links.active { opacity: 1; visibility: visible; pointer-events: auto; }
+      .nav-links a {
+        font-size: 1.65rem; font-weight: 600; letter-spacing: 1.5px; color: #e5e5e5; width: 100%; display: block; padding: 4px 0;
+        opacity: 0; transform: translateY(-20px); transition: opacity 0.4s cubic-bezier(0.52, 0.16, 0.24, 1), transform 0.4s cubic-bezier(0.52, 0.16, 0.24, 1), color 0.3s;
+      }
+      .nav-links.active a { opacity: 1; transform: translateY(0); }
+    }
+
+    /* 工具页面主体 */
+    .utility-container { flex: 1; padding: 140px 5% 60px 5%; max-width: 1200px; margin: 0 auto; width: 100%; }
+    .page-title { font-size: 2rem; letter-spacing: 4px; text-align: center; margin-bottom: 3rem; color: #d4af37; }
+
+    .tools-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 24px; }
+    .tool-card {
+      background: #141414; border: 1px solid #222; border-radius: 12px;
+      padding: 24px; text-decoration: none; color: #fff; display: flex; flex-direction: column; gap: 12px;
+      cursor: pointer; transition: all 0.3s ease;
+    }
+    @media (hover: hover) and (pointer: fine) {
+      .tool-card:hover { border-color: #d4af37; transform: translateY(-4px); box-shadow: 0 8px 24px rgba(212, 175, 55, 0.15); }
+    }
+    .tool-header { display: flex; align-items: center; gap: 14px; }
+    .tool-icon { width: 32px; height: 32px; stroke: #d4af37; fill: none; flex-shrink: 0; }
+    .tool-title { font-size: 1.15rem; font-weight: 600; color: #f4f4f4; }
+    .tool-desc { font-size: 0.88rem; color: #888; line-height: 1.5; }
+    .tool-tag {
+      align-self: flex-start; margin-top: auto; font-size: 0.75rem; color: #d4af37;
+      background: rgba(212, 175, 55, 0.1); padding: 4px 10px; border-radius: 20px; border: 1px solid rgba(212, 175, 55, 0.3);
+      display: none;
+    }
+
+    /* ===== 主题切换按钮与浅色主题 ===== */
+    html { color-scheme: dark; }
+    html.light { color-scheme: light; }
+    .theme-btn {
+      background: transparent; border: 1px solid #444; color: #fff;
+      padding: 4px 8px; cursor: pointer; font-size: 0.8rem; letter-spacing: 1px;
+      transition: 0.3s; white-space: nowrap; border-radius: 4px;
+      display: inline-flex; align-items: center; justify-content: center;
+    }
+    @media (hover: hover) and (pointer: fine) {
+      .theme-btn:hover { border-color: #d4af37; color: #d4af37; }
+    }
+    .theme-btn svg { width: 14px; height: 14px; display: block; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    /* 语言与主题按钮统一规格：等高、无边框透明底、桌面手机完全一致；两按钮间竖线分隔 */
+    .nav-ctrl-group { display: flex; align-items: center; gap: 8px; }
+    .nav-divider { width: 1px; height: 18px; background: #555; }
+    html.light .nav-divider { background: #c2bdb2; }
+    .lang-btn, .theme-btn {
+      height: 30px; padding: 0 6px;
+      display: inline-flex; align-items: center; justify-content: center;
+      border: 0; background: transparent; border-radius: 0;
+    }
+
+    /* 浅色覆盖：仅主界面；全屏测量类弹层（.fullscreen-modal）保持深色以保证读数可读 */
+    html.light body { background-color: #f7f6f3; color: #26262a; }
+    html.light nav { background: #ffffff; border-bottom-color: #ddd8cf; }
+    html.light .logo { color: #17171a; }
+    html.light .nav-links a { color: #5a5a60; }
+    html.light .lang-btn, html.light .theme-btn { color: #17171a; border-color: #c9c4ba; }
+    html.light .menu-toggle .bar { background-color: #3a3a3e; }
+    html.light .tool-card { background: #fff; border-color: #ddd8cf; color: #17171a; }
+    @media (hover: hover) and (pointer: fine) {
+      html.light .tool-card:hover { box-shadow: 0 8px 24px rgba(0,0,0,0.08); }
+    }
+    html.light .tool-icon { stroke: #8a6d1f; }
+    html.light .tool-title { color: #17171a; }
+    html.light .tool-desc { color: #6a6a70; }
+    /* 普通对话框（设备提示/外链确认）跟随浅色；全屏测量弹层仍保持深色 */
+    html.light .link-modal-overlay { background: rgba(30,30,30,0.35); }
+    html.light .link-modal { background: #fff; border-color: #e2ddd3; box-shadow: 0 10px 30px rgba(0,0,0,0.15); }
+    html.light .link-modal-close { color: #8a8a90; }
+    @media (hover: hover) and (pointer: fine) {
+      html.light .link-modal-close:hover { color: #17171a; }
+    }
+    html.light .link-modal-icon { background: rgba(212,175,55,0.12); border-color: rgba(138,109,31,0.35); }
+    html.light .link-modal-icon svg { stroke: #8a6d1f; }
+    html.light .link-modal-title { color: #17171a; }
+    html.light .link-modal-desc { color: #4a4a50; }
+    @media (max-width: 1024px) {
+      html.light .nav-links { background-color: #f7f6f3; }
+      html.light .nav-links a { color: #2b2b30; }
+    }
+
+    /* ========== 浅色主题：全屏工具弹层 ==========
+       仅计时器 / 秒表 / 世界时钟 跟随浅色；
+       屏幕保护、指南针(.compass-modal)、水平仪(.level-modal) 保持深色以保证读数可读。 */
+    /* 关闭按钮：仅这三个弹层内改浅色 */
+    html.light .timer-modal .close-btn,
+    html.light .stopwatch-modal .close-btn,
+    html.light .world-clock-modal .close-btn {
+      color: #3a3a3e; background: rgba(255,255,255,0.78); border-color: rgba(0,0,0,0.18);
+    }
+    @media (hover: hover) and (pointer: fine) {
+      html.light .timer-modal .close-btn:hover,
+      html.light .stopwatch-modal .close-btn:hover,
+      html.light .world-clock-modal .close-btn:hover {
+        color: #fff; background: #8a6d1f; border-color: #8a6d1f;
+      }
+    }
+
+    /* ---- 秒表 ---- */
+    html.light .stopwatch-modal { background: #f7f6f3; }
+    html.light .stopwatch-heading { color: #8a6d1f; }
+    html.light .stopwatch-display { color: #17171a; }
+    html.light .stopwatch-display .ms { color: #6a6a70; }
+    html.light .stopwatch-btn { background: #e8e5df; color: #5a5a60; }
+    /* 开始/运行态保持品牌色：特异性需高于上面的灰色覆盖（0,2,1） */
+    html.light .stopwatch-modal .stopwatch-btn.primary { background: #20d457; color: #fff; }
+    html.light .stopwatch-modal .stopwatch-btn.running { background: #ff922b; color: #fff; }
+    html.light .stopwatch-record-head { color: #6a6a70; }
+    html.light .stopwatch-record { border-bottom-color: #e2ddd3; color: #26262a; }
+    html.light .stopwatch-record .lap-index { color: #6a6a70; }
+    html.light .stopwatch-record .lap-split { color: #8a6d1f; }
+    html.light .stopwatch-record .lap-best { color: #0f8a3a; }
+    html.light .stopwatch-record .lap-worst { color: #c0392b; }
+    html.light .stopwatch-empty { color: #9a9aa0; }
+
+    /* ---- 计时器 ---- */
+    html.light .fullscreen-modal.timer-modal { background: #f7f6f3; }
+    html.light .timer-edit-group label { color: #6a6a70; }
+    html.light .timer-edit-group input { color: #17171a; }
+    html.light .timer-edit-group input:focus { color: #000; }
+    html.light .timer-separator::before, html.light .timer-separator::after { background: #17171a; }
+    html.light .timer-name-input { background: #fff; border-color: #c9c4ba; color: #17171a; }
+    html.light .timer-name-input::placeholder { color: #9a9aa0; }
+    html.light .timer-name-input:focus { border-color: #8a6d1f; }
+    html.light .timer-wheel-wrap::after { color: #17171a; }
+    html.light .timer-wheel-option { color: #9a9aa0; }
+    html.light .timer-wheel-option.selected { color: #17171a; }
+    html.light .timer-action-btn { background: #e8e5df; color: #5a5a60; }
+    /* 开始按钮保持绿色（特异性高于上面的灰色覆盖）；悬停金边只作用于普通按钮 */
+    html.light .timer-setup-view .timer-action-btn.primary { background: #20d457; color: #fff; }
+    html.light .timer-running-view .timer-action-btn.primary { background: #ff922b; color: #fff; }
+    /* Resume 恢复绿色，与深色主题一致（特异性高于上面的橙色覆盖） */
+    html.light .timer-running-view .timer-action-btn.primary.timer-resume { background: #20d457; color: #fff; }
+    @media (hover: hover) and (pointer: fine) {
+      html.light .timer-action-btn:not(.primary):hover { border-color: #8a6d1f; color: #8a6d1f; }
+    }
+    html.light .timer-status.timer-error { color: #c2610a; }
+    /* 进度环：保留橙色进度，轨道改浅灰；内盘与页面同底色 */
+    html.light .timer-ring { background: conic-gradient(#ff922b var(--timer-progress), #ddd8cf 0); }
+    html.light .timer-ring-inner { background: #f7f6f3; }
+    html.light .timer-running-display { color: #17171a; }
+    html.light .timer-running-meta { color: #6a6a70; }
+    @media (max-width: 768px) {
+      html.light .timer-wheel-picker::after { background: rgba(0,0,0,0.07); }
+    }
+
+    /* ---- 世界时钟（联合国五常时钟） ---- */
+    html.light .world-clock-modal { background: #f7f6f3; color: #26262a; }
+    html.light .map-section { background: #e9e7e1; border-bottom-color: #ddd8cf; }
+    html.light .map-dot-label { color: #17171a; text-shadow: 0 1px 3px rgba(255,255,255,0.9), 0 0 6px rgba(255,255,255,0.85); }
+    html.light .map-dot-label .time-text { color: #4a4a50; }
+    html.light .section-headline { color: #6a6a70; }
+    html.light .desktop-city-card { background: #fff; border-color: #ddd8cf; }
+    @media (hover: hover) and (pointer: fine) {
+      html.light .desktop-city-card:hover { background: #f0eeea; border-color: #8a6d1f; }
+    }
+    html.light .desktop-city-card.local-card { background: rgba(212,175,55,0.10); border-color: rgba(138,109,31,0.55); }
+    html.light .card-city-name { color: #17171a; }
+    html.light .local-badge { background: #8a6d1f; color: #fff; }
+    html.light .card-city-time { color: #8a6d1f; }
+    html.light .card-city-meta { color: #6a6a70; }
+    html.light .mobile-clock-item { background: #fff; border-color: #ddd8cf; }
+    html.light .mobile-clock-item.local-item { background: rgba(212,175,55,0.12); border-color: #8a6d1f; }
+    html.light .mobile-city-title { color: #17171a; }
+    html.light .mobile-city-subtitle { color: #6a6a70; }
+    html.light .mobile-city-time { color: #8a6d1f; }
+
+    .compass-modal { align-items: flex-start; justify-content: flex-start; padding: 76px 24px 36px; overflow-y: auto; overflow-x: hidden; background: #000; }
+    .compass-panel { width: min(680px, 100%); margin: 0 auto; padding: 16px 12px; text-align: center; }
+    .compass-heading { margin-bottom: 26px; color: #d4af37; font-size: clamp(1.4rem, 3vw, 2rem); letter-spacing: 2px; }
+    .compass-stage { position: relative; width: min(80vw, 360px); aspect-ratio: 1; margin: 0 auto; }
+    .compass-rotor { position: absolute; inset: 0; border-radius: 50%; will-change: transform; }
+    .compass-ticks { position: absolute; inset: 9%; border-radius: 50%; }
+    .compass-tick { position: absolute; top: 0; left: 50%; width: 2px; height: 100%; transform-origin: 50% 50%; }
+    .compass-tick::before { content: ''; position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 1.5px; height: 9px; background: rgba(255,255,255,.5); border-radius: 1px; }
+    .compass-tick.mid::before { height: 14px; background: rgba(255,255,255,.75); }
+    .compass-tick.major::before { height: 20px; width: 2.5px; background: #fff; }
+    .compass-deg-label { position: absolute; color: #fff; font-size: 1rem; font-weight: 500; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .compass-crosshair-v { position: absolute; top: 17%; bottom: 17%; left: 50%; width: 1px; margin-left: -0.5px; background: rgba(255,255,255,.28); }
+    .compass-crosshair-h { position: absolute; left: 17%; right: 17%; top: 50%; height: 1px; margin-top: -0.5px; background: rgba(255,255,255,.28); }
+    .compass-cardinal { position: absolute; color: #fff; font-size: 1.3rem; font-weight: 700; will-change: transform; }
+    .compass-center { position: absolute; top: 50%; left: 50%; width: 26%; aspect-ratio: 1; transform: translate(-50%, -50%); border-radius: 50%; background: rgba(140,140,140,.16); z-index: 2; }
+    .compass-pointer { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 7px solid transparent; border-right: 7px solid transparent; border-top: 12px solid #ff5a52; z-index: 3; }
+    .compass-readout { margin-top: 34px; }
+    .compass-degree-big { color: #fff; font-size: clamp(3.2rem, 9vw, 4.6rem); font-weight: 200; line-height: 1; font-variant-numeric: tabular-nums; }
+    .compass-degree-unit { margin-left: 2px; color: #fff; font-size: .45em; font-weight: 200; }
+    .compass-dir { margin-left: 12px; color: #999; font-size: .38em; font-weight: 400; letter-spacing: 2px; }
+    .compass-location { margin-top: 12px; color: #bbb; font-size: 1.05rem; letter-spacing: .5px; min-height: 1.4em; }
+    .compass-status { min-height: 1.4em; margin: 12px 0 14px; color: #999; font-size: .9rem; }
+    /* 罗盘中央的传感器启动按钮：做成"待启动罗盘"——刻度环+NESW+指北针，点击后放大淡出、真罗盘浮现 */
+    .compass-sensor-orb {
+      position: absolute; inset: 0; z-index: 5; display: flex; align-items: center; justify-content: center;
+      overflow: hidden; border-radius: 50%;
+    }
+    .compass-sensor-orb[hidden] { display: none; }
+    .compass-sensor-orb.leaving { animation: orbLeave 0.6s ease forwards; }
+    @keyframes orbLeave {
+      0% { opacity: 1; }
+      100% { opacity: 0; transform: scale(1.12); }
+    }
+    /* 呼吸式光晕：圆形按钮外一整圈光缓慢向外扩张再收缩，被容器圆形裁剪，不触及标题 */
+    .compass-sensor-glow {
+      position: absolute; inset: 6%; border-radius: 50%; pointer-events: none;
+      background: radial-gradient(circle, rgba(212,175,55,.26) 0%, rgba(212,175,55,.12) 52%, rgba(212,175,55,0) 72%);
+      animation: sensorGlow 3.2s ease-in-out infinite;
+    }
+    @keyframes sensorGlow {
+      0%, 100% { transform: scale(1); opacity: .5; }
+      50% { transform: scale(1.14); opacity: .95; }
+    }
+    .compass-sensor-btn {
+      position: relative; display: block; width: 92%; aspect-ratio: 1; border-radius: 50%;
+      background: radial-gradient(circle at 35% 30%, #232327, #121214 72%);
+      border: 1px solid rgba(212, 175, 55, 0.55); color: #d4af37; cursor: pointer;
+      box-shadow: 0 0 14px rgba(212, 175, 55, 0.14), inset 0 1px 0 rgba(255,255,255,0.05);
+      transition: transform 0.2s ease;
+      animation: sensorBtnGlow 3.2s ease-in-out infinite;
+    }
+    .compass-sensor-btn:active { transform: scale(0.95); }
+    @media (hover: hover) {
+      .compass-sensor-btn:hover { transform: scale(1.02); }
+    }
+    @keyframes sensorBtnGlow {
+      0%, 100% { box-shadow: 0 0 10px rgba(212, 175, 55, 0.12), inset 0 1px 0 rgba(255,255,255,0.05); }
+      50% { box-shadow: 0 0 28px rgba(212, 175, 55, 0.32), inset 0 1px 0 rgba(255,255,255,0.05); }
+    }
+    /* 按钮内嵌罗盘特征：刻度环 */
+    .orb-ticks { position: absolute; inset: 7.5%; border-radius: 50%; }
+    .orb-tick { position: absolute; top: 0; left: 50%; width: 2px; height: 100%; transform-origin: 50% 50%; }
+    .orb-tick::before { content: ''; position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 1.5px; height: 9px; background: rgba(255,255,255,.5); border-radius: 1px; }
+    .orb-tick.mid::before { height: 13px; background: rgba(255,255,255,.72); }
+    .orb-tick.major::before { height: 19px; width: 2.5px; background: #fff; }
+    .orb-content { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; z-index: 3; }
+    .orb-content svg { width: 17%; height: 17%; stroke: #fff; fill: none; }
+    .orb-content span { font-size: clamp(.72rem, 2.6vw, .9rem); letter-spacing: 1.5px; color: #d4af37; }
+    /* 罗盘本体在传感器启动前隐藏，启动后淡入 + 从小放大（face 层做入场，rotor 只管旋转避免 transform 冲突） */
+    .compass-face { position: absolute; inset: 0; opacity: 0; transform: scale(0.82); transition: opacity 0.7s ease, transform 0.7s cubic-bezier(0.22, 1, 0.36, 1); pointer-events: none; }
+    .compass-stage.activated .compass-face { opacity: 1; transform: scale(1); }
+    .compass-data { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 26px auto 0; }
+    .compass-data-item { padding: 14px 10px; border: 1px solid #222; border-radius: 12px; background: #141414; }
+    .compass-data-label { color: #888; font-size: .8rem; letter-spacing: 1px; }
+    .compass-data-value { margin-top: 7px; color: #f4f4f4; font-size: 1rem; font-variant-numeric: tabular-nums; }
+
+    /* 跳转确认弹窗 */
+    .link-modal-overlay {
+      position: fixed; inset: 0; z-index: 2000; display: flex; align-items: center; justify-content: center;
+      background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+      opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0.3s ease;
+      padding: 24px;
+    }
+
+    /* 秒表：弹窗高度锁死视口，时间+按钮固定不动，仅记录列表滚动（桌面/移动一致） */
+    .stopwatch-modal { height: 100dvh; min-height: 0; max-height: 100dvh; align-items: stretch; justify-content: center; padding: 76px 24px 24px; overflow: hidden; background: #000; }
+    .stopwatch-panel { width: min(680px, 100%); margin: 0 auto; display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; padding: 16px 12px; text-align: center; }
+    .stopwatch-heading { margin-bottom: 26px; color: #d4af37; font-size: clamp(1.4rem, 3vw, 2rem); letter-spacing: 2px; flex: 0 0 auto; }
+    .stopwatch-display { color: #f2f2f2; font-size: clamp(3rem, 11vw, 5.2rem); font-weight: 200; line-height: 1; font-variant-numeric: tabular-nums; letter-spacing: .01em; flex: 0 0 auto; }
+    .stopwatch-display .ms { font-size: .55em; color: #999; }
+    /* 字体中的冒号基线通常偏低；独立包裹后上移，使其与两侧数字视觉居中 */
+    .stopwatch-display .colon { display: inline-block; transform: translateY(-0.08em); }
+    .stopwatch-actions { display: flex; flex-direction: column; align-items: center; gap: 14px; margin: 44px auto 0; width: 100%; max-width: 360px; flex: 0 0 auto; }
+    .stopwatch-row { display: flex; gap: 14px; width: 100%; }
+    .stopwatch-row .stopwatch-btn { flex: 1 1 0; }
+    .stopwatch-actions > .stopwatch-btn { flex: 0 0 auto; width: 100%; }
+    /* 桌面端：重置+开始横排一行，计次独立一行，面板放宽、时间更大 */
+    @media (min-width: 769px) {
+      .stopwatch-panel { width: min(860px, 100%); }
+      .stopwatch-display { font-size: clamp(4.5rem, 8vw, 7rem); }
+      .stopwatch-actions { max-width: 480px; }
+      .stopwatch-record .lap-time { font-size: 1.2rem; }
+      .stopwatch-record .lap-split { font-size: 1.05rem; }
+    }
+    .stopwatch-btn { flex: 1 1 200px; padding: 14px 22px; border-radius: 28px; border: 0; background: #2b2b2b; color: #aaa; cursor: pointer; font-size: 1.05rem; transition: 0.2s; }
+    .stopwatch-btn.primary { background: #20d457; color: #fff; font-weight: 700; }
+    .stopwatch-btn.running { background: #ff922b; color: #fff; font-weight: 700; }
+    /* 悬停效果仅限有悬停能力的设备（鼠标）；触屏点按后 :hover 会残留，导致按钮颜色不回弹 */
+    @media (hover: hover) and (pointer: fine) {
+      .stopwatch-btn:hover { filter: brightness(1.12); }
+    }
+    /* 按压反馈：手指按住时轻微变暗+收缩，松开立即回弹。
+       用 filter 而非改 background，可叠加在灰/绿/橙任意底色上，深浅主题通用 */
+    .stopwatch-btn:not(:disabled):active {
+      filter: brightness(0.86); transform: scale(0.97);
+      transition: filter 0.1s ease, transform 0.1s ease;
+    }
+    .stopwatch-btn.disabled, .stopwatch-btn:disabled {
+      opacity: .38; cursor: not-allowed; filter: none;
+    }
+    .stopwatch-records { margin: 34px 0 0; text-align: left; flex: 1 1 auto; min-height: 0; overflow-y: auto; }
+    .stopwatch-record-head { font-size: .85rem; letter-spacing: 2px; color: #888; text-transform: uppercase; margin-bottom: 12px; }
+    .stopwatch-record { display: flex; justify-content: space-between; align-items: center; padding: 11px 16px; border-bottom: 1px solid #1e1e1e; color: #ddd; font-variant-numeric: tabular-nums; }
+    .stopwatch-record .lap-index { color: #888; font-size: .85rem; }
+    .stopwatch-record .lap-time { font-size: 1.05rem; }
+    .stopwatch-record .lap-split { color: #d4af37; font-size: .95rem; }
+    .stopwatch-record .lap-best { color: #20d457; }
+    .stopwatch-record .lap-worst { color: #ff6b5e; }
+    .stopwatch-empty { color: #555; text-align: center; padding: 20px 0; font-size: .9rem; }
+
+    /* 水平仪（Apple 测距仪·水平仪样式：黑底、圆环+白色气泡、中央大角度读数，水平时整屏变绿只留细圈与读数） */
+    .level-modal { align-items: flex-start; justify-content: flex-start; padding: 76px 24px 36px; overflow-y: auto; overflow-x: hidden; background: #000; transition: background-color .28s ease; }
+    .level-modal.flat { background: #34c759; }
+    /* 面板贴顶保证标题与 COMPASS 同位；标题下方的圆环组+提示文字整组
+       在剩余空间内垂直居中（auto 外边距），按钮叠在舞台内与圆环天然同位 */
+    .level-panel {
+      width: min(680px, 100%); margin: 0 auto; padding: 16px 12px; text-align: center;
+      display: flex; flex-direction: column; min-height: 100%;
+    }
+    .level-heading { margin-bottom: 26px; color: #d4af37; font-size: clamp(1.4rem, 3vw, 2rem); letter-spacing: 2px; text-transform: uppercase; flex: 0 0 auto; }
+
+    /* 舞台与指南针表盘同尺寸；顶部 auto 外边距配合状态行底部 auto，
+       使"圆环/按钮 + 提示文字"整组在标题下剩余空间垂直居中 */
+    .level-stage { position: relative; width: min(80vw, 360px); aspect-ratio: 1; margin: auto auto 14px; flex: 0 0 auto; }
+    .level-ring { position: absolute; top: 50%; left: 50%; width: 100%; aspect-ratio: 1; transform: translate(-50%, -50%); border: 2px solid rgba(255,255,255,.42); border-radius: 50%; transition: border-color .28s ease, opacity .35s ease; }
+    .level-bubble { position: absolute; top: 50%; left: 50%; width: 72%; aspect-ratio: 1; border-radius: 50%; transform: translate(-50%, -50%); background: rgba(255,255,255,.92); transition: opacity .35s ease; will-change: transform; }
+    /* 中央大角度读数：叠在白色气泡之上，用黑字保证清晰；绿屏水平态另行转白字 */
+    .level-readout {
+      position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 3;
+      color: #111; font-size: clamp(2rem, 9vw, 3rem); font-weight: 200; line-height: 1;
+      font-variant-numeric: tabular-nums; letter-spacing: 1px; pointer-events: none;
+      text-shadow: none; transition: opacity .35s ease;
+    }
+    /* 水平时：整屏变绿，气泡淡出，圆环变为细白圈，只留圈与读数 */
+    .level-modal.flat .level-bubble { opacity: 0; }
+    .level-modal.flat .level-ring { border-color: rgba(255,255,255,.6); }
+    .level-modal.flat .level-readout { color: rgba(255,255,255,.95); text-shadow: none; }
+    /* 绿屏水平态下标题改白字保证可读；黑底两态与指南针 COMPASS 同为金色 */
+    .level-modal.flat .level-heading { color: rgba(255,255,255,.9); }
+
+    /* 启动圆盘容器：与指南针 orb 同结构，退出时复用 orbLeave 放大淡出动画 */
+    .level-orb {
+      position: absolute; inset: 0; z-index: 2; display: flex; align-items: center; justify-content: center;
+      overflow: hidden; border-radius: 50%;
+    }
+    .level-orb[hidden] { display: none; }
+    .level-orb.leaving { animation: orbLeave 0.6s ease forwards; }
+    /* 传感器启动按钮：与指南针同款圆盘，按钮文字上方带水平仪图标，外围呼吸光晕 */
+    .level-glow {
+      position: absolute; inset: 6%; border-radius: 50%; pointer-events: none; opacity: 0;
+      background: radial-gradient(circle, rgba(212,175,55,.26) 0%, rgba(212,175,55,.12) 52%, rgba(212,175,55,0) 72%);
+      animation: sensorGlow 3.2s ease-in-out infinite; transition: opacity .3s ease;
+    }
+    .level-panel.pending .level-glow { opacity: 1; }
+    .level-start {
+      position: relative; width: 92%; aspect-ratio: 1; border-radius: 50%;
+      background: radial-gradient(circle at 35% 30%, #232327, #121214 72%);
+      border: 1px solid rgba(212, 175, 55, 0.55); color: #d4af37;
+      font-size: clamp(.72rem, 2.6vw, .9rem); letter-spacing: 1.5px; cursor: pointer;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
+      padding: 0 14px; text-align: center;
+      box-shadow: 0 0 14px rgba(212, 175, 55, 0.14), inset 0 1px 0 rgba(255,255,255,0.05);
+      transition: transform 0.2s ease;
+      animation: sensorBtnGlow 3.2s ease-in-out infinite;
+    }
+    .level-start svg { width: clamp(30px, 11vw, 44px); height: auto; }
+    .level-start:active { transform: scale(0.95); }
+    @media (hover: hover) {
+      .level-start:hover { transform: scale(1.02); }
+    }
+    /* 待授权阶段隐藏圆环、气泡与读数，只留标题/按钮/提示三要素 */
+    .level-panel.pending .level-ring, .level-panel.pending .level-bubble,
+    .level-panel.pending .level-readout { opacity: 0; }
+
+    /* 提示文字：上间距由舞台下边距提供（14px），底部 auto 与舞台顶部 auto 配合整组居中 */
+    .level-state { margin: 0 auto auto; min-height: 1.5em; font-size: 1rem; color: rgba(255,255,255,.58); flex: 0 0 auto; }
+    .level-state.flat { color: #fff; font-weight: 600; }
+
+    .link-modal-overlay.active { opacity: 1; visibility: visible; }
+    .link-modal {
+      width: min(420px, 100%); background: #141414; border: 1px solid #2a2a2a; border-radius: 16px;
+      padding: 28px; position: relative; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
+      transform: translateY(20px); transition: transform 0.3s ease;
+    }
+    .link-modal-overlay.active .link-modal { transform: translateY(0); }
+    .link-modal-close {
+      position: absolute; top: 16px; right: 18px; background: transparent; border: none; cursor: pointer;
+      color: #777; font-size: 1.4rem; line-height: 1; padding: 4px; transition: color 0.2s;
+    }
+    @media (hover: hover) and (pointer: fine) {
+      .link-modal-close:hover { color: #fff; }
+    }
+    .link-modal-header { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; padding-right: 32px; }
+    .link-modal-icon {
+      width: 44px; height: 44px; border-radius: 50%; flex-shrink: 0;
+      background: rgba(212, 175, 55, 0.1); border: 1px solid rgba(212, 175, 55, 0.3);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .link-modal-icon svg { width: 22px; height: 22px; stroke: #d4af37; fill: none; }
+    .link-modal-title { font-size: 1.25rem; font-weight: 700; color: #f4f4f4; }
+    .link-modal-desc { color: #999; font-size: 0.92rem; line-height: 1.6; margin-bottom: 24px; }
+    .link-modal-actions { display: flex; justify-content: flex-end; gap: 12px; }
+    .link-modal-visit {
+      padding: 8px 22px; border: none; border-radius: 6px; cursor: pointer;
+      background: #d4af37; color: #000; font-size: 0.9rem; font-weight: 600; letter-spacing: 1px;
+      transition: all 0.2s ease;
+    }
+    @media (hover: hover) and (pointer: fine) {
+      .link-modal-visit:hover { background: #f0c848; transform: translateY(-1px); }
+    }
+
+
+    .timer-modal { align-items: center; justify-content: center; padding: 24px; overflow-y: auto; }
+    .fullscreen-modal.timer-modal { background: #1f1f1f; }
+    .timer-panel { width: min(760px, 100%); padding: 30px 20px; text-align: center; }
+    .timer-title { display: none; }
+    .timer-edit-display { --digit-size: clamp(4rem, 9vw, 8rem); display: flex; align-items: flex-end; justify-content: center; margin: 90px auto 0; }
+    .timer-edit-group { width: clamp(120px, 16vw, 180px); display: flex; flex-direction: column; align-items: center; gap: 12px; }
+    .timer-edit-group label { color: #999; font-size: 1rem; letter-spacing: 1px; }
+    /* 不加 letter-spacing：负字距会在末位数字后留隐形间距，使居中文本左偏半个字距，
+       导致冒号与数字左右间隙不等；等宽数字由 tabular-nums 保证不抖动 */
+    .timer-edit-group input { width: 100%; min-width: 0; padding: 0; border: 0; outline: 0; background: transparent; color: #f2f2f2; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Arial, sans-serif; font-size: var(--digit-size); font-weight: 200; line-height: 0.9; text-align: center; font-variant-numeric: tabular-nums; }
+    .timer-edit-group input:focus { color: #fff; }
+    /* 冒号：绑定数字行高(0.9em)，在输入框内垂直居中对齐字形区 */
+    .timer-separator { position: relative; width: 1.5rem; align-self: flex-end; height: 0.9em; margin-bottom: 0.05em; font-size: var(--digit-size); color: transparent; }
+    .timer-separator::before, .timer-separator::after { content: ''; position: absolute; left: 50%; width: 10px; height: 10px; border-radius: 50%; background: #f2f2f2; transform: translateX(-50%); }
+    /* 冒号双圆点：整体下移 0.06em 与数字视觉中心对齐（此前偏上约 8px） */
+    .timer-separator::before { top: 0.2em; }
+    .timer-separator::after { top: 0.51em; }
+    .timer-wheel-picker { display: none; }
+    .timer-name-input {
+      display: block; margin: 26px auto 0; width: min(320px, 86%);
+      padding: 10px 18px; border: 1px solid #333; border-radius: 24px;
+      background: #262626; color: #f2f2f2; font-size: 1rem; text-align: center; outline: none;
+      transition: border-color 0.25s;
+    }
+    @media (max-width: 768px) {
+      .timer-name-input { margin-top: 22px; }
+      .timer-actions { margin-top: 46px; }
+    }
+    .timer-name-input::placeholder { color: #666; }
+    .timer-name-input:focus { border-color: #d4af37; }
+    .timer-wheel-wrap { position: relative; flex: 1; height: 220px; z-index: 1; }
+    .timer-wheel-wrap::before { content: none; }
+    .timer-wheel-wrap::after { content: attr(data-unit); position: absolute; top: 82px; left: calc(50% + 18px); width: max-content; height: 48px; display: flex; align-items: center; z-index: 2; color: #f5f5f5; font-size: 1.15rem; font-weight: 400; line-height: 1; pointer-events: none; }
+    .timer-wheel-column { position: relative; width: 100%; height: 100%; overflow-y: auto; scroll-snap-type: none; scrollbar-width: none; overscroll-behavior: contain; }
+    .timer-wheel-column::-webkit-scrollbar { display: none; }
+    .timer-wheel-indicator { display: none; }
+    .timer-wheel-options { padding: 86px 0; position: relative; z-index: 1; }
+    .timer-wheel-option { height: 48px; display: flex; align-items: center; justify-content: center; scroll-snap-align: start; color: #666; font-size: 1.5rem; transform: translateY(-5px); transition: color 0.15s; }
+    .timer-wheel-option.selected { color: #f5f5f5; }
+    .timer-actions { display: flex; justify-content: center; gap: 16px; flex-wrap: wrap; margin: 150px auto 0; max-width: 640px; }
+    .timer-action-btn { flex: 1 1 220px; padding: 14px 22px; border-radius: 28px; border: 0; background: #2b2b2b; color: #aaa; cursor: pointer; font-size: 1.1rem; transition: 0.2s; }
+    .timer-action-btn.primary { background: #20d457; color: #fff; font-weight: 700; }
+    @media (hover: hover) and (pointer: fine) {
+      .timer-action-btn:hover { border-color: #d4af37; color: #d4af37; }
+    }
+    @media (hover: hover) and (pointer: fine) {
+      .timer-action-btn.primary:hover { color: #000; filter: brightness(1.08); }
+    }
+    /* 按压反馈：按住轻微变暗+收缩，松开立即回弹；filter 可叠加在灰/绿/橙任意底色上，深浅主题通用 */
+    .timer-action-btn:active {
+      filter: brightness(0.86); transform: scale(0.97);
+      transition: filter 0.1s ease, transform 0.1s ease;
+    }
+    .timer-status { display: none; }
+    .timer-status.timer-error { display: block; margin-top: 18px; color: #ff9f43; text-align: center; font-size: 0.95rem; }
+    .timer-running-view { display: none; }
+    .timer-running-view.active { display: block; }
+    .timer-running-view .timer-action-btn.primary { background: #ff922b; color: #fff; }
+    .timer-running-view .timer-action-btn.primary.timer-resume { background: #20d457; }
+    .timer-setup-view.hidden { display: none; }
+    .timer-ring { --timer-progress: 100%; width: min(72vw, 560px, 72vh); height: min(72vw, 560px, 72vh); margin: 0 auto; border-radius: 50%; padding: 10px; background: conic-gradient(#ff922b var(--timer-progress), #3e3e42 0); flex: 0 0 auto; }
+    .timer-ring-inner { width: 100%; height: 100%; min-width: 0; border-radius: 50%; background: #1f1f1f; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; }
+    .timer-running-display { color: #f2f2f2; font-size: clamp(4rem, 12vw, 8rem); font-weight: 200; line-height: 1; font-variant-numeric: tabular-nums; }
+    .timer-running-display.long { font-size: clamp(2.8rem, 8vw, 5.2rem); white-space: nowrap; }
+    .timer-running-meta { color: #888; margin-top: 28px; font-size: 1.3rem; }
+
+    /* 全屏通用 Modal */
+    .fullscreen-modal {
+      position: fixed; inset: 0; width: auto; height: auto; min-height: 100dvh;
+      background-color: #000; z-index: 1000; display: none; opacity: 0; transition: opacity 0.4s ease;
+    }
+    .fullscreen-modal.active { display: flex; opacity: 1; flex-direction: column; }
+
+    .close-btn {
+      position: absolute; top: 25px; left: 30px; z-index: 1010;
+      color: rgba(255, 255, 255, 0.85); background: rgba(0, 0, 0, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.2); padding: 8px 18px;
+      border-radius: 20px; cursor: pointer; font-size: 0.9rem;
+      backdrop-filter: blur(8px); transition: all 0.3s;
+    }
+    @media (hover: hover) and (pointer: fine) {
+      .close-btn:hover { color: #fff; background: rgba(212, 175, 55, 0.4); border-color: #d4af37; }
+    }
+
+    /* 屏保样式 */
+    .bg-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #000; overflow: hidden; }
+    #bgCanvas { width: 100%; height: 100%; display: block; }
+    .overlay-mask { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.35); }
+
+    .clock-wrapper {
+      position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); max-width: 100vw;
+      display: flex; flex-direction: column; align-items: center; z-index: 1005; user-select: none; cursor: pointer;
+    }
+
+    .analog-clock { width: 320px; height: 320px; border-radius: 50%; background: #ffffff; box-shadow: 0 25px 60px rgba(0, 0, 0, 0.5); position: relative; overflow: hidden; display: block; transition: transform 0.2s ease; }
+    @media (hover: hover) and (pointer: fine) {
+      .analog-clock:hover { transform: scale(1.02); }
+    }
+
+    /* 翻页钟样式的数码显示（容器自适应，桌面/移动端均不溢出） */
+    .digital-clock {
+      display: none; width: min(92vw, 980px, 77vh); gap: clamp(12px, 3vw, 36px);
+      container-type: inline-size;
+    }
+    .flip-card {
+      position: relative; flex: 1 1 0; min-width: 0; aspect-ratio: 0.78;
+      border-radius: clamp(16px, 5cqw, 30px);
+      background: linear-gradient(180deg, #17171a 0%, #101013 49.85%, #0b0b0d 50.15%, #121215 100%);
+      border: 1px solid rgba(255,255,255,0.05);
+      box-shadow: 0 30px 90px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.05);
+      display: flex; align-items: center; justify-content: center; overflow: hidden;
+    }
+    .flip-card::before {
+      content: ''; position: absolute; left: 0; right: 0; top: 50%; height: 1.5px;
+      background: #050505; z-index: 3;
+    }
+    .flip-card::after {
+      content: ''; position: absolute; left: 0; right: 0; top: calc(50% + 1.5px); height: 45%;
+      background: linear-gradient(180deg, rgba(0,0,0,0.3), transparent 60%); z-index: 3; pointer-events: none;
+    }
+    .flip-digit {
+      color: #e8e8ed; font-size: min(40cqw, 34vh); font-weight: 500; line-height: 1;
+      font-variant-numeric: tabular-nums; letter-spacing: -0.01em; padding-bottom: 0.04em; white-space: nowrap;
+    }
+
+    .ticks-container { position: absolute; width: 100%; height: 100%; top: 0; left: 0; }
+    .tick { position: absolute; top: 0; left: 50%; width: 2px; height: 100%; transform-origin: 50% 50%; display: flex; justify-content: center; }
+    .tick::before { content: ''; display: block; width: 2px; height: 8px; background-color: #a0a0a5; border-radius: 1px; margin-top: 6px; }
+    .tick.major::before { width: 3.5px; height: 13px; background-color: #000000; margin-top: 5px; }
+
+    .numbers-container { position: absolute; width: 100%; height: 100%; top: 0; left: 0; }
+    .num { position: absolute; width: 30px; height: 30px; font-size: 1.6rem; font-weight: 700; color: #000000; text-align: center; line-height: 30px; transform: translate(-50%, -50%); }
+
+    .clock-center { position: absolute; top: 50%; left: 50%; width: 12px; height: 12px; background: #ffffff; border: 3px solid #ff9500; border-radius: 50%; transform: translate(-50%, -50%); z-index: 12; }
+    .hand { position: absolute; bottom: 50%; left: 50%; transform-origin: 50% 100%; border-radius: 6px; }
+    .hour-hand { width: 10px; height: 72px; background: #000000; margin-left: -5px; z-index: 8; }
+    .minute-hand { width: 8px; height: 110px; background: #000000; margin-left: -4px; z-index: 9; }
+    .second-hand { width: 2.5px; height: 140px; background: #ff9500; margin-left: -1.25px; z-index: 10; }
+    .second-hand::after { content: ''; position: absolute; bottom: -28px; left: 0; width: 2.5px; height: 28px; background: #ff9500; }
+
+    .date-display {
+      font-size: clamp(0.72rem, 2.6vw, 0.95rem); font-weight: 400; letter-spacing: clamp(1.5px, 0.8vw, 4px); margin-top: 36px;
+      color: rgba(255, 255, 255, 0.55); text-align: center; line-height: 1.5; max-width: 92vw;
+      text-shadow: 0 1px 8px rgba(0,0,0,0.8);
+    }
+
+    /* 屏保控件（退出按钮/背景选择器）闲置自动隐藏 */
+    .screensaver-ui { transition: opacity 0.5s ease; }
+    #screensaverOverlay.ui-hidden .screensaver-ui { opacity: 0; pointer-events: none; }
+    #screensaverOverlay.ui-hidden { cursor: none; }
+
+    .bg-selector {
+      position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);
+      display: flex; gap: 12px; z-index: 1010; padding: 10px 16px;
+      background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(12px);
+      border-radius: 30px; border: 1px solid rgba(255, 255, 255, 0.15);
+    }
+    .bg-thumb { width: 40px; height: 40px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; background-size: cover; background-position: center; transition: all 0.2s; }
+    .bg-thumb.black-thumb { background: #000; }
+    .bg-thumb.active { border-color: #d4af37; transform: scale(1.1); }
+
+    /* 世界时钟 - 暗黑极简风格 */
+    .world-clock-modal { background: #000000; overflow-x: hidden; overflow-y: auto; color: #fff; }
+
+    .map-section {
+      position: relative; width: 100%; height: clamp(420px, 50vw, 1100px); min-height: 320px; flex: 0 0 clamp(420px, 50vw, 1100px); background: #000000;
+      border-bottom: 1px solid #1a1a1a; overflow: hidden;
+    }
+    #daylightCanvas { width: 100%; height: 100%; display: block; }
+
+    .map-markers-layer {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none;
+    }
+    .map-dot-item {
+      position: absolute; transform: translate(-50%, -50%); pointer-events: auto; z-index: 1002;
+    }
+    .map-dot {
+      width: 7px; height: 7px; background-color: #ff9500; border-radius: 50%;
+      box-shadow: 0 0 8px rgba(255, 149, 0, 0.8);
+    }
+    .map-dot-label {
+      position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+      font-size: 0.8rem; font-weight: 700; color: #ffffff; white-space: nowrap;
+      text-shadow: 0 1px 4px #000, 0 0 8px #000; line-height: 1.15;
+    }
+    .map-dot-label .time-text {
+      display: block; font-size: 0.72rem; font-weight: 400; color: #cccccc; margin-top: 1px;
+    }
+
+    .clocks-bottom-section {
+      flex: 0 0 auto; max-height: 38dvh; overflow-y: auto; padding: 30px 5%; display: flex; flex-direction: column; gap: 20px;
+    }
+    .section-headline { font-size: 0.85rem; letter-spacing: 2px; color: #888; text-transform: uppercase; }
+
+    .city-cards-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 20px;
+    }
+    .desktop-city-card {
+      background: #141414; border: 1px solid #222222; border-radius: 12px; padding: 20px;
+      display: flex; flex-direction: column; gap: 8px; transition: 0.3s ease;
+    }
+    @media (hover: hover) and (pointer: fine) {
+      .desktop-city-card:hover { border-color: #d4af37; background: #1c1c1c; }
+    }
+    .desktop-city-card.local-card { border-color: rgba(212,175,55,0.6); background: rgba(212,175,55,0.05); }
+
+    .card-city-name { font-size: 0.95rem; font-weight: 700; color: #fff; display: flex; align-items: center; justify-content: space-between; }
+    .local-badge { font-size: 0.65rem; background: #d4af37; color: #000; padding: 2px 6px; border-radius: 10px; font-weight: 800; text-transform: uppercase; }
+    .card-city-time { font-size: 1.8rem; font-weight: 200; color: #d4af37; letter-spacing: 1px; font-variant-numeric: tabular-nums; }
+    .card-city-meta { font-size: 0.75rem; color: #888; display: flex; justify-content: space-between; margin-top: 4px; }
+
+    .mobile-clock-list { display: none; flex-direction: column; gap: 12px; width: 100%; margin-top: 0; }
+    .mobile-clock-item {
+      background: #141414; border: 1px solid #222222; border-radius: 12px; padding: 16px 20px;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .mobile-clock-item.local-item { border-color: #d4af37; background: rgba(212,175,55,0.08); }
+    .mobile-item-left { display: flex; flex-direction: column; gap: 4px; }
+    .mobile-city-title { font-size: 1.05rem; font-weight: 600; color: #fff; display: flex; align-items: center; gap: 8px; }
+    .mobile-city-subtitle { font-size: 0.75rem; color: #888; }
+    .mobile-city-time { font-size: 1.6rem; font-weight: 300; color: #d4af37; font-variant-numeric: tabular-nums; }
+
+    @media (max-width: 600px) {
+      .compass-modal { padding: 72px 16px 28px; }
+      .compass-heading { margin-bottom: 18px; font-size: 1.35rem; }
+      .compass-stage { width: min(86vw, 290px); }
+      /* 水平仪与指南针移动端同尺寸，保证两界面舞台/标题一致 */
+      .level-modal { padding: 72px 16px 28px; }
+      .level-heading { margin-bottom: 18px; font-size: 1.35rem; }
+      .level-stage { width: min(86vw, 290px); }
+      .compass-deg-label { font-size: .82rem; }
+      .compass-cardinal { font-size: 1.05rem; }
+      .compass-readout { margin-top: 22px; }
+      .compass-degree-big { font-size: 2.9rem; }
+      .compass-dir { margin-left: 8px; letter-spacing: 1px; }
+      .compass-location { margin-top: 8px; font-size: .95rem; }
+      .compass-status { margin: 8px 0 10px; font-size: .82rem; }
+      .compass-data { grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 20px; }
+      .compass-data-item { padding: 10px 4px; border-radius: 10px; }
+      .compass-data-label { font-size: .68rem; letter-spacing: .5px; }
+      .compass-data-value { margin-top: 5px; font-size: .82rem; }
+    }
+
+    @media (max-width: 768px) {
+      .fullscreen-modal { min-height: 100vh; min-height: 100dvh; }
+      .stopwatch-modal { height: 100vh; height: 100dvh; min-height: 0; max-height: 100dvh; }
+      .world-clock-modal { overflow-y: auto; }
+      .map-section {
+        display: none !important;
+      }
+      .city-cards-grid { display: none !important; }
+      .mobile-clock-list { display: flex !important; }
+      .clocks-bottom-section {
+        flex: 1 1 auto; min-height: 100vh; min-height: 100svh; max-height: none; overflow: visible; padding: 100px 6% 40px 6%; gap: 16px;
+      }
+      .mobile-clock-item { min-width: 0; padding: 16px; }
+      .mobile-city-time { font-size: clamp(1.25rem, 6vw, 1.6rem); }
+      .timer-panel { width: 100%; padding: 20px 0; }
+      .timer-edit-display { display: none; }
+      .timer-wheel-picker { position: relative; display: flex; width: min(680px, 100%); gap: 0; margin: 70px auto 0; }
+      .timer-wheel-picker::after { content: ''; position: absolute; left: 0; right: 0; top: 82px; height: 48px; border-radius: 24px; background: rgba(70,70,74,0.55); pointer-events: none; z-index: 0; }
+      .timer-actions { margin-top: 90px; padding: 0 16px; }
+    }
+
+    @media (min-width: 769px) {
+      .timer-modal { padding: 56px 24px 24px; overflow: hidden; }
+      .timer-running-view.active { transform: translateY(24px); }
+      .timer-running-view .timer-ring { width: min(52vw, 520px, 58vh); height: min(52vw, 520px, 58vh); }
+      .timer-running-view .timer-actions { margin-top: 34px; }
+      .timer-running-view .timer-status { margin-top: 12px; }
+    }
+  </style>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/topojson-client@3"></script>
+</head>
+<body>
+
+  <!-- 顶部导航栏 -->
+  <nav>
+    <a href="index.html" class="logo">YONGJIAN WANG</a>
+
+    <div class="nav-right-container">
+      <div class="nav-ctrl-group">
+        <button class="theme-btn" onclick="toggleTheme()" id="theme-btn" aria-label="Toggle theme">
+          <svg id="theme-icon" viewBox="0 0 24 24" aria-hidden="true"></svg>
+        </button>
+        <span class="nav-divider" aria-hidden="true"></span>
+        <button class="lang-btn" onclick="toggleLanguage()" id="lang-btn">中</button>
+      </div>
+
+      <div class="nav-links" id="navLinks">
+        <a href="index.html" id="nav-about">About</a>
+        <a href="gallery.html" id="nav-gallery">Gallery</a>
+        <a href="utility.html" class="active" id="nav-utility">Utility</a>
+        <a href="nav.html" id="nav-nav">Navigation</a>
+      </div>
+
+      <button class="menu-toggle" id="menuToggle" aria-label="Toggle Menu">
+        <span class="bar"></span>
+        <span class="bar"></span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- 工具页面主体 -->
+  <main class="utility-container">
+    <h2 class="page-title" id="page-title">Utility</h2>
+    <div class="tools-grid">
+
+      <!-- 屏保时钟卡片 -->
+      <div class="tool-card" onclick="openClockSaver()">
+        <div class="tool-header">
+          <svg class="tool-icon" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          <h3 class="tool-title" id="clock-title">Screen Saver Clock</h3>
+        </div>
+        <p class="tool-desc" id="clock-desc">Full-screen classic dial clock with 60-second precise ticks, real-time display, and dynamic wallpapers.</p>
+        <span class="tool-tag" id="clock-tag">Interactive Tool</span>
+      </div>
+
+      <!-- 世界时钟卡片 -->
+      <div class="tool-card" onclick="openWorldClock()">
+        <div class="tool-header">
+          <svg class="tool-icon" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10z"/></svg>
+          <h3 class="tool-title" id="worldclock-title">UN P5 World Clock</h3>
+        </div>
+        <p class="tool-desc" id="worldclock-desc">Real-time world clock featuring the 5 UN Security Council permanent members with a dynamic solar terminator daylight line map.</p>
+        <span class="tool-tag" id="worldclock-tag">Interactive Map</span>
+      </div>
+
+      <!-- 自定义计时器卡片 -->
+      <div class="tool-card" onclick="openTimer()">
+        <div class="tool-header">
+          <svg class="tool-icon" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><polyline points="12 9 12 13 15 15"/><path d="M9 2h6M12 2v3"/></svg>
+          <h3 class="tool-title" id="timer-title">Custom Timer</h3>
+        </div>
+        <p class="tool-desc" id="timer-desc">Set a countdown and receive a browser notification when it finishes.</p>
+        <span class="tool-tag" id="timer-tag">Browser Notification</span>
+      </div>
+
+      <!-- 秒表 -->
+      <div class="tool-card" onclick="openStopwatch()">
+        <div class="tool-header">
+          <svg class="tool-icon" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5"/><path d="M9 2h6"/><path d="m16.5 4.5 1.5 1.5"/></svg>
+          <h3 class="tool-title" id="stopwatch-title">Stopwatch</h3>
+        </div>
+        <p class="tool-desc" id="stopwatch-desc">Measure elapsed time and save up to 100 lap records.</p>
+      </div>
+
+      <!-- 计算器 -->
+      <div class="tool-card" onclick="openCalculator()">
+        <div class="tool-header">
+          <svg class="tool-icon" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 6h8"/><path d="M8 11h.01M12 11h.01M16 11h.01M8 15h.01M12 15h.01M16 15h.01M8 19h.01M12 19h.01M16 19h.01"/></svg>
+          <h3 class="tool-title" id="calculator-title">Calculator</h3>
+        </div>
+        <p class="tool-desc" id="calculator-desc">Basic, scientific, function plotting and unit conversion.</p>
+      </div>
+
+      <!-- 水平仪 -->
+      <div class="tool-card" onclick="openLevel()">
+        <div class="tool-header">
+          <svg class="tool-icon" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/><path d="M12 3v6M12 15v6M3 12h6M15 12h6"/></svg>
+          <h3 class="tool-title" id="level-title">Level</h3>
+        </div>
+        <p class="tool-desc" id="level-desc">Detect device tilt with the gyroscope. Mobile device required.</p>
+      </div>
+
+      <!-- Apple 地图 -->
+      <div class="tool-card" onclick="openAppleMaps()">
+        <div class="tool-header">
+          <svg class="tool-icon" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18 3 21V6l6-3 6 3 6-3v15l-6 3-6-3Z"/><path d="M9 3v15M15 6v15"/></svg>
+          <h3 class="tool-title" id="maps-title">Apple Maps</h3>
+        </div>
+        <p class="tool-desc" id="maps-desc">Open Apple Maps in a new browser tab.</p>
+      </div>
+
+      <!-- 指南针 -->
+      <div class="tool-card" onclick="openCompass()">
+        <div class="tool-header">
+          <svg class="tool-icon" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m15.5 8.5-2.2 4.8-4.8 2.2 2.2-4.8 4.8-2.2Z"/></svg>
+          <h3 class="tool-title" id="compass-title">Compass</h3>
+        </div>
+        <p class="tool-desc" id="compass-desc">Show heading, latitude, longitude, and altitude. Mobile device required.</p>
+      </div>
+
+      <!-- 必应翻译 -->
+      <div class="tool-card" onclick="openBingTranslator()">
+        <div class="tool-header">
+          <svg class="tool-icon" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 8 6 6"/><path d="m4 14 6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="m22 22-5-10-5 10"/><path d="M14 18h6"/></svg>
+          <h3 class="tool-title" id="translator-title">Bing Translator</h3>
+        </div>
+        <p class="tool-desc" id="translator-desc">Open Bing Translator in a new browser tab.</p>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- 1. 全屏屏保组件 -->
+  <div class="fullscreen-modal" id="screensaverOverlay">
+    <button class="close-btn screensaver-ui" onclick="closeClockSaver()" id="exit-btn">← EXIT SCREEN SAVER</button>
+    <div class="bg-container" id="bgContainer">
+      <canvas id="bgCanvas"></canvas>
+    </div>
+    <div class="overlay-mask" id="overlayMask"></div>
+
+    <div class="clock-wrapper" onclick="toggleClockMode()">
+      <div class="analog-clock" id="analogClock">
+        <div class="ticks-container" id="ticksContainer"></div>
+        <div class="numbers-container" id="numbersContainer"></div>
+        <div class="clock-center"></div>
+        <div class="hand hour-hand" id="hourHand"></div>
+        <div class="hand minute-hand" id="minuteHand"></div>
+        <div class="hand second-hand" id="secondHand"></div>
+      </div>
+
+      <div class="digital-clock" id="digitalClock">
+        <div class="flip-card"><span class="flip-digit" id="flipHours">00</span></div>
+        <div class="flip-card"><span class="flip-digit" id="flipMinutes">00</span></div>
+      </div>
+
+      <div class="date-display" id="dateDisplay">LOADING...</div>
+    </div>
+
+    <div class="bg-selector screensaver-ui" id="bgSelector"></div>
+  </div>
+
+  <!-- 计时器组件 -->
+  <div class="fullscreen-modal timer-modal" id="timerOverlay">
+    <button class="close-btn" onclick="closeTimer()" id="timer-close-btn">← CLOSE TIMER</button>
+    <div class="timer-panel">
+      <h2 class="timer-title" id="timer-panel-title">CUSTOM TIMER</h2>
+      <div class="timer-setup-view" id="timerSetupView">
+        <div class="timer-edit-display">
+          <div class="timer-edit-group"><label for="timerHours" id="timer-hours-label">hr</label><input id="timerHours" type="text" maxlength="2" value="00" inputmode="numeric" aria-label="Hours"></div>
+          <span class="timer-separator">:</span>
+          <div class="timer-edit-group"><label for="timerMinutes" id="timer-minutes-label">min</label><input id="timerMinutes" type="text" maxlength="2" value="00" inputmode="numeric" aria-label="Minutes"></div>
+          <span class="timer-separator">:</span>
+          <div class="timer-edit-group"><label for="timerSeconds" id="timer-seconds-label">sec</label><input id="timerSeconds" type="text" maxlength="2" value="00" inputmode="numeric" aria-label="Seconds"></div>
+        </div>
+        <div class="timer-wheel-picker" id="timerWheelPicker" aria-label="Choose timer duration">
+          <div class="timer-wheel-wrap" data-unit="hr"><div class="timer-wheel-column" data-input="timerHours"><div class="timer-wheel-options" id="wheelHours"></div></div><div class="timer-wheel-indicator"></div></div>
+          <div class="timer-wheel-wrap" data-unit="min"><div class="timer-wheel-column" data-input="timerMinutes"><div class="timer-wheel-options" id="wheelMinutes"></div></div><div class="timer-wheel-indicator"></div></div>
+          <div class="timer-wheel-wrap" data-unit="sec"><div class="timer-wheel-column" data-input="timerSeconds"><div class="timer-wheel-options" id="wheelSeconds"></div></div><div class="timer-wheel-indicator"></div></div>
+        </div>
+        <input class="timer-name-input" id="timerName" type="text" maxlength="30" placeholder="Name this timer (optional)">
+        <div class="timer-actions">
+          <button class="timer-action-btn" onclick="resetTimer()" id="timer-reset-btn">Reset</button>
+          <button class="timer-action-btn primary" onclick="startTimer()" id="timer-start-btn">Start</button>
+        </div>
+      </div>
+      <div class="timer-running-view" id="timerRunningView">
+        <div class="timer-ring" id="timerRing"><div class="timer-ring-inner">
+          <div class="timer-running-display" id="timerRunningDisplay">00:00</div>
+          <div class="timer-running-meta" id="timerRunningClock">Timer</div>
+        </div></div>
+        <div class="timer-actions">
+          <button class="timer-action-btn" onclick="resetTimer()" id="timer-running-cancel-btn">Cancel</button>
+          <button class="timer-action-btn primary" onclick="pauseTimer()" id="timer-pause-btn">Pause</button>
+        </div>
+      </div>
+      <div class="timer-status" id="timerStatus" aria-live="polite"></div>
+    </div>
+  </div>
+
+  <!-- 2. 全屏世界时钟组件 -->
+  <div class="fullscreen-modal world-clock-modal" id="worldClockOverlay">
+    <button class="close-btn" onclick="closeWorldClock()" id="world-exit-btn">← EXIT WORLD CLOCK</button>
+
+    <!-- 桌面端地图区域 -->
+    <div class="map-section">
+      <canvas id="daylightCanvas"></canvas>
+      <div class="map-markers-layer" id="mapMarkersLayer"></div>
+    </div>
+
+    <!-- 底部区域 -->
+    <div class="clocks-bottom-section">
+      <div class="section-headline" id="list-headline">WORLD CLOCKS (UN P5 + LOCAL)</div>
+
+      <div class="city-cards-grid" id="desktopCardsGrid"></div>
+      <div class="mobile-clock-list" id="mobileClockList"></div>
+    </div>
+  </div>
+
+  <!-- 3. 指南针组件 -->
+  <div class="fullscreen-modal compass-modal" id="compassOverlay">
+    <button class="close-btn" onclick="closeCompass()" id="compass-close-btn">← CLOSE COMPASS</button>
+    <div class="compass-panel">
+      <h2 class="compass-heading" id="compass-panel-title">COMPASS</h2>
+
+      <div class="compass-stage" id="compassStage">
+        <div class="compass-face">
+          <div class="compass-rotor" id="compassRotor">
+            <div class="compass-ticks" id="compassTicks"></div>
+            <div id="compassDegLabels"></div>
+            <div class="compass-crosshair-v"></div>
+            <div class="compass-crosshair-h"></div>
+            <span class="compass-cardinal" id="compassCardN">N</span>
+            <span class="compass-cardinal" id="compassCardE">E</span>
+            <span class="compass-cardinal" id="compassCardS">S</span>
+            <span class="compass-cardinal" id="compassCardW">W</span>
+          </div>
+          <div class="compass-pointer"></div>
+          <div class="compass-center"></div>
+        </div>
+        <div class="compass-sensor-orb" id="compassSensorOrb" hidden>
+          <div class="compass-sensor-glow"></div>
+          <button class="compass-sensor-btn" onclick="requestCompassSensors()" id="compass-permission-btn">
+            <div class="orb-ticks" id="orbTicks"></div>
+            <div class="orb-content">
+              <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 4.5 20.5l7.5-4 7.5 4z"/></svg>
+              <span id="compass-sensor-btn-text">Enable Sensors</span>
+            </div>
+          </button>
+        </div>
+      </div>
+
+      <div class="compass-readout">
+        <div class="compass-degree-big"><span id="compassDegreeText">--</span><span class="compass-degree-unit">°</span><span id="compassDirText" class="compass-dir"></span></div>
+        <div class="compass-location" id="compassLocation">&nbsp;</div>
+      </div>
+      <div class="compass-status" id="compassStatus" aria-live="polite"></div>
+
+      <div class="compass-data">
+        <div class="compass-data-item">
+          <div class="compass-data-label" id="compass-lon-label">LONGITUDE</div>
+          <div class="compass-data-value" id="compassLon">--</div>
+        </div>
+        <div class="compass-data-item">
+          <div class="compass-data-label" id="compass-lat-label">LATITUDE</div>
+          <div class="compass-data-value" id="compassLat">--</div>
+        </div>
+        <div class="compass-data-item">
+          <div class="compass-data-label" id="compass-alt-label">ALTITUDE</div>
+          <div class="compass-data-value" id="compassAlt">--</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6. 秒表组件 -->
+  <div class="fullscreen-modal stopwatch-modal" id="stopwatchOverlay">
+    <button class="close-btn" onclick="closeStopwatch()" id="stopwatch-close-btn">← CLOSE STOPWATCH</button>
+    <div class="stopwatch-panel">
+      <h2 class="stopwatch-heading" id="stopwatch-panel-title">STOPWATCH</h2>
+      <div class="stopwatch-display" id="stopwatchDisplay">00<span class="colon">:</span>00.0<span class="ms">00</span></div>
+      <div class="stopwatch-actions">
+        <div class="stopwatch-row">
+          <button class="stopwatch-btn" onclick="resetStopwatch()" id="stopwatch-reset-btn">Reset</button>
+          <button class="stopwatch-btn primary" onclick="toggleStopwatch()" id="stopwatch-toggle-btn">Start</button>
+        </div>
+        <button class="stopwatch-btn" onclick="recordLap()" id="stopwatch-lap-btn">Lap</button>
+      </div>
+      <div class="stopwatch-records">
+        <div class="stopwatch-record-head" id="stopwatch-records-head">LAP RECORDS (0/100)</div>
+        <div id="stopwatchRecords"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 7. 水平仪组件 -->
+  <div class="fullscreen-modal level-modal" id="levelOverlay">
+    <button class="close-btn" onclick="closeLevel()" id="level-close-btn">← CLOSE LEVEL</button>
+    <div class="level-panel pending" id="levelPanel">
+      <h2 class="level-heading" id="level-panel-title">LEVEL</h2>
+      <div class="level-stage">
+        <div class="level-ring"></div>
+        <div class="level-bubble" id="levelBubble"></div>
+        <div class="level-readout" id="levelReadout">0°</div>
+        <div class="level-orb" id="levelOrb">
+          <div class="level-glow"></div>
+          <button class="level-start" onclick="startLevel()" id="levelStartBtn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="9"></circle>
+              <circle cx="12" cy="12" r="3"></circle>
+              <path d="M12 3v6M12 15v6M3 12h6M15 12h6"></path>
+            </svg>
+            <span id="levelStartText">Enable Sensors</span>
+          </button>
+        </div>
+      </div>
+      <div class="level-state" id="levelState"></div>
+    </div>
+  </div>
+
+  <!-- 4. 跳转确认弹窗 -->
+  <div class="link-modal-overlay" id="linkModalOverlay" onclick="handleLinkModalBackdrop(event)">
+    <div class="link-modal">
+      <button class="link-modal-close" onclick="closeLinkModal()" aria-label="Close">✕</button>
+      <div class="link-modal-header">
+        <span class="link-modal-icon" id="linkModalIcon"></span>
+        <h3 class="link-modal-title" id="linkModalTitle"></h3>
+      </div>
+      <p class="link-modal-desc" id="linkModalDesc"></p>
+      <div class="link-modal-actions">
+        <button class="link-modal-visit" onclick="confirmLinkVisit()" id="link-visit-btn">Visit</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. 移动设备提示弹窗 -->
+  <div class="link-modal-overlay" id="deviceNoticeOverlay" onclick="handleDeviceNoticeBackdrop(event)">
+    <div class="link-modal">
+      <button class="link-modal-close" onclick="closeDeviceNotice()" aria-label="Close">✕</button>
+      <div class="link-modal-header">
+        <span class="link-modal-icon">
+          <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></svg>
+        </span>
+        <h3 class="link-modal-title" id="deviceNoticeTitle"></h3>
+      </div>
+      <p class="link-modal-desc" id="deviceNoticeDesc"></p>
+      <div class="link-modal-actions">
+        <button class="link-modal-visit" onclick="closeDeviceNotice()" id="device-ok-btn">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 菜单响应式
+    const menuToggle = document.getElementById('menuToggle');
+    const navLinks = document.getElementById('navLinks');
+    menuToggle.addEventListener('click', () => {
+      menuToggle.classList.toggle('active');
+      navLinks.classList.toggle('active');
+    });
+
+    // 多语言配置
+    let currentLang = 'en';
+    const i18n = {
+      en: {
+        navAbout: 'About', navGallery: 'Gallery', navUtility: 'Utility', navNav: 'Navigation', langBtn: '中',
+        pageTitle: 'Utility',
+        clockTitle: 'Screen Saver Clock',
+        clockDesc: 'Full-screen classic dial clock with 60-second precise ticks, real-time display, and dynamic wallpapers.',
+        clockTag: 'Interactive Tool',
+        worldclockTitle: 'UN P5 World Clock',
+        worldclockDesc: 'Real-time world clock featuring the 5 UN Security Council permanent members with a dynamic solar terminator daylight line map.',
+        worldclockTag: 'Interactive Map',
+        timerTitle: 'Custom Timer', timerDesc: 'Set a countdown and receive a browser notification when it finishes.', timerTag: 'Browser Notification',
+        stopwatchTitle: 'Stopwatch', stopwatchDesc: 'Measure elapsed time and save up to 100 lap records.',
+        stopwatchPanelTitle: 'STOPWATCH', stopwatchClose: '← CLOSE STOPWATCH',
+        stopwatchStart: 'Start', stopwatchPause: 'Pause', stopwatchResume: 'Resume', stopwatchReset: 'Reset', stopwatchLap: 'Lap',
+        stopwatchRecordsHead: (n) => `LAP RECORDS (${n}/100)`, stopwatchEmpty: 'No lap records yet.',
+        calculatorTitle: 'Calculator', calculatorDesc: 'Basic, scientific, function plotting and unit conversion.',
+        calculatorToast: 'Calculator is coming soon. Stay tuned!',
+        levelTitle: 'Level', levelDesc: 'Detect device tilt with the gyroscope. Mobile device required.',
+        levelPanelTitle: 'LEVEL', levelClose: '← CLOSE LEVEL',
+        levelFlat: 'Perfectly Level', levelTilting: 'Adjusting…', levelNoGyro: 'No gyroscope data detected on this device.',
+        levelEnableSensors: 'Enable Sensors', levelRetry: 'Tap to Retry',
+        levelNeedPermission: 'Tap the button to allow motion sensor access.',
+        levelDenied: 'Motion sensor access denied. Enable it in Settings > Privacy > Motion & Orientation Access.',
+        mapsTitle: 'Apple Maps', mapsDesc: 'Open Apple Maps web version in a new browser tab.',
+        mapsModalDesc: 'You are about to leave this site and open Apple Maps web version in a new browser tab.',
+        compassTitle: 'Compass', compassDesc: 'Show heading, latitude, longitude, and altitude. Mobile device required.',
+        translatorTitle: 'Bing Translator', translatorDesc: 'Open Bing Translator in a new browser tab.',
+        translatorModalDesc: 'You are about to leave this site and open Bing Translator in a new browser tab.',
+        linkVisitBtn: 'Visit',
+        deviceNoticeTitle: 'Use on a Mobile Device',
+        deviceNoticeDesc: 'The compass requires a magnetometer sensor, which is only available on mobile devices. Please open this page on your iPhone or Android phone to use the compass.',
+        deviceOkBtn: 'OK',
+        compassClose: '← CLOSE COMPASS', compassPanelTitle: 'COMPASS', compassEnable: 'Enable Sensors',
+        compassDirs: ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'],
+        compassLatLabel: 'LATITUDE', compassLonLabel: 'LONGITUDE', compassAltLabel: 'ALTITUDE',
+        compassLocating: 'Locating…', compassLocError: 'Location unavailable. Please check browser permissions.',
+        compassNoGeo: 'Geolocation is not supported by this browser.',
+        compassDenied: 'Motion sensor access denied.', compassNoSensor: 'No compass sensor detected on this device.',
+        timerPanelTitle: 'CUSTOM TIMER', timerClose: '← CLOSE TIMER', timerHours: 'hr', timerMinutes: 'min', timerSeconds: 'sec',
+        timerStart: 'Start', timerPause: 'Pause', timerCancel: 'Cancel', timerComplete: 'Complete', timerLabel: 'Timer', timerReset: 'Reset', timerReady: 'Ready', timerRunning: 'Timer running…', timerFinished: 'Time is up!', timerNotificationDenied: 'Browser notifications are blocked; completion is shown here.', timerNamePlaceholder: 'Name this timer (optional)',
+        exitBtn: '← EXIT SCREEN SAVER',
+        worldExitBtn: '← EXIT WORLD CLOCK',
+        listHeadline: 'WORLD CLOCKS (UN P5 + LOCAL)',
+        localLabel: 'LOCAL'
+      },
+      zh: {
+        navAbout: '个人介绍', navGallery: '照片展示', navUtility: '实用工具', navNav: '网址导航', langBtn: 'EN',
+        pageTitle: '实用工具',
+        clockTitle: '全屏时钟屏保',
+        clockDesc: '具备 60 秒精细刻度、数码/指针切换与纯黑背景的全屏屏保时钟。',
+        clockTag: '交互工具',
+        worldclockTitle: '联合国 5 常世界时钟',
+        worldclockDesc: '实时显示联合国五大常任理事国时间，并随太阳运行轨迹提供真实动态晨昏线地图。',
+        worldclockTag: '地图交互',
+        timerTitle: '自定义计时器', timerDesc: '设置倒计时，结束时接收浏览器通知。', timerTag: '浏览器通知',
+        stopwatchTitle: '秒表', stopwatchDesc: '精确计时，最多保存 100 条计次记录。',
+        stopwatchPanelTitle: '秒表', stopwatchClose: '← 关闭秒表',
+        stopwatchStart: '开始', stopwatchPause: '暂停', stopwatchResume: '继续', stopwatchReset: '重置', stopwatchLap: '计次',
+        stopwatchRecordsHead: (n) => `计次记录 (${n}/100)`, stopwatchEmpty: '暂无计次记录。',
+        calculatorTitle: '计算器', calculatorDesc: '基本运算、科学计算、函数绘图与单位换算。',
+        calculatorToast: '计算器功能即将上线，敬请期待！',
+        levelTitle: '水平仪', levelDesc: '通过陀螺仪检测设备倾斜角度，需在移动设备上使用。',
+        levelPanelTitle: '水平仪', levelClose: '← 关闭水平仪',
+        levelFlat: '已水平', levelTilting: '调整中…', levelNoGyro: '未检测到陀螺仪数据。',
+        levelEnableSensors: '启用传感器', levelRetry: '点击重试',
+        levelNeedPermission: '点击按钮以允许访问运动传感器。',
+        levelDenied: '运动传感器权限被拒绝。请在「设置 > 隐私与安全性 > 运动与健身」中开启。',
+        mapsTitle: 'Apple 地图', mapsDesc: '在新标签页打开 Apple 地图网页版。',
+        mapsModalDesc: '即将离开本站，在新标签页打开 Apple 地图网页版，是否继续？',
+        compassTitle: '指南针', compassDesc: '实时显示朝向、经纬度与海拔高度，需在移动设备上使用。',
+        translatorTitle: '必应翻译', translatorDesc: '在新标签页打开必应翻译。',
+        translatorModalDesc: '即将离开本站，在新标签页打开必应翻译，是否继续？',
+        linkVisitBtn: '访问',
+        deviceNoticeTitle: '请在移动设备上使用',
+        deviceNoticeDesc: '指南针功能需要磁力计传感器，仅支持在移动设备上使用。请在 iPhone 或 Android 手机上打开本页面体验指南针。',
+        deviceOkBtn: '知道了',
+        compassClose: '← 关闭指南针', compassPanelTitle: '指南针', compassEnable: '启用传感器',
+        compassDirs: ['北', '东北', '东', '东南', '南', '西南', '西', '西北'],
+        compassLatLabel: '纬度', compassLonLabel: '经度', compassAltLabel: '海拔',
+        compassLocating: '正在定位…', compassLocError: '无法获取位置，请检查浏览器定位权限。',
+        compassNoGeo: '当前浏览器不支持地理定位。',
+        compassDenied: '运动传感器权限被拒绝。', compassNoSensor: '未检测到罗盘传感器。',
+        timerPanelTitle: '自定义计时器', timerClose: '← 关闭计时器', timerHours: '时', timerMinutes: '分', timerSeconds: '秒',
+        timerStart: '开始', timerPause: '暂停', timerCancel: '取消', timerComplete: '完成', timerLabel: '计时器', timerReset: '重置', timerReady: '准备就绪', timerRunning: '计时中…', timerFinished: '时间到！', timerNotificationDenied: '浏览器通知被阻止，结束状态已显示在此处。', timerNamePlaceholder: '为计时器命名（可选）',
+        exitBtn: '← 退出屏保',
+        worldExitBtn: '← 退出世界时钟',
+        listHeadline: '世界时钟 (常任理事国 + 当地)',
+        localLabel: '当前位置'
+      }
+    };
+
+    function toggleLanguage() {
+      currentLang = currentLang === 'en' ? 'zh' : 'en';
+      const t = i18n[currentLang];
+      document.getElementById('nav-about').innerText = t.navAbout;
+      document.getElementById('nav-gallery').innerText = t.navGallery;
+      document.getElementById('nav-utility').innerText = t.navUtility;
+      document.getElementById('nav-nav').innerText = t.navNav;
+      document.getElementById('lang-btn').innerText = t.langBtn;
+
+      document.getElementById('page-title').innerText = t.pageTitle;
+      document.getElementById('clock-title').innerText = t.clockTitle;
+      document.getElementById('clock-desc').innerText = t.clockDesc;
+      document.getElementById('clock-tag').innerText = t.clockTag;
+      document.getElementById('worldclock-title').innerText = t.worldclockTitle;
+      document.getElementById('worldclock-desc').innerText = t.worldclockDesc;
+      document.getElementById('worldclock-tag').innerText = t.worldclockTag;
+      document.getElementById('timer-title').innerText = t.timerTitle;
+      document.getElementById('timer-desc').innerText = t.timerDesc;
+      document.getElementById('timer-tag').innerText = t.timerTag;
+      document.getElementById('stopwatch-title').innerText = t.stopwatchTitle;
+      document.getElementById('stopwatch-desc').innerText = t.stopwatchDesc;
+      document.getElementById('stopwatch-panel-title').innerText = t.stopwatchPanelTitle;
+      document.getElementById('stopwatch-close-btn').innerText = t.stopwatchClose;
+      document.getElementById('stopwatch-reset-btn').innerText = t.stopwatchReset;
+      document.getElementById('stopwatch-lap-btn').innerText = t.stopwatchLap;
+      updateStopwatchButtons();
+      renderStopwatchLaps();
+      document.getElementById('calculator-title').innerText = t.calculatorTitle;
+      document.getElementById('calculator-desc').innerText = t.calculatorDesc;
+      document.getElementById('level-title').innerText = t.levelTitle;
+      document.getElementById('level-desc').innerText = t.levelDesc;
+      document.getElementById('level-panel-title').innerText = t.levelPanelTitle;
+      document.getElementById('level-close-btn').innerText = t.levelClose;
+      document.getElementById('levelStartText').innerText = t.levelEnableSensors;
+      document.getElementById('maps-title').innerText = t.mapsTitle;
+      document.getElementById('maps-desc').innerText = t.mapsDesc;
+      document.getElementById('compass-title').innerText = t.compassTitle;
+      document.getElementById('compass-desc').innerText = t.compassDesc;
+      document.getElementById('translator-title').innerText = t.translatorTitle;
+      document.getElementById('translator-desc').innerText = t.translatorDesc;
+      document.getElementById('compass-close-btn').innerText = t.compassClose;
+      document.getElementById('compass-panel-title').innerText = t.compassPanelTitle;
+      document.getElementById('compass-sensor-btn-text').innerText = t.compassEnable;
+      document.getElementById('compass-lat-label').innerText = t.compassLatLabel;
+      document.getElementById('compass-lon-label').innerText = t.compassLonLabel;
+      document.getElementById('compass-alt-label').innerText = t.compassAltLabel;
+      document.getElementById('timer-panel-title').innerText = t.timerPanelTitle;
+      document.getElementById('timer-close-btn').innerText = t.timerClose;
+      document.getElementById('timer-hours-label').innerText = t.timerHours;
+      document.getElementById('timer-minutes-label').innerText = t.timerMinutes;
+      document.getElementById('timer-seconds-label').innerText = t.timerSeconds;
+      [t.timerHours, t.timerMinutes, t.timerSeconds].forEach((unit, index) => {
+        const wheelWrap = document.querySelectorAll('.timer-wheel-wrap')[index];
+        if (wheelWrap) wheelWrap.dataset.unit = unit;
+      });
+      document.getElementById('timer-start-btn').innerText = t.timerStart;
+      document.getElementById('timer-reset-btn').innerText = t.timerReset;
+      document.getElementById('timerName').placeholder = t.timerNamePlaceholder;
+      document.getElementById('timerRunningClock').innerText = timerRunningName || t.timerLabel;
+      const pauseButton = document.getElementById('timer-pause-btn');
+      const isPaused = !timerRunning && timerRemainingMs > 0 && !timerCompleted;
+      pauseButton.innerText = timerCompleted ? t.timerComplete : (isPaused ? (currentLang === 'zh' ? '继续' : 'Resume') : t.timerPause);
+      pauseButton.classList.toggle('timer-resume', isPaused);
+      document.getElementById('timer-running-cancel-btn').innerText = timerCompleted ? t.timerReset : t.timerCancel;
+      document.getElementById('timerRunningClock').innerText = t.timerLabel;
+      document.getElementById('exit-btn').innerText = t.exitBtn;
+      document.getElementById('world-exit-btn').innerText = t.worldExitBtn;
+      document.getElementById('list-headline').innerText = t.listHeadline;
+      updateLinkModalContent();
+      updateDeviceNoticeContent();
+      // 语言切换后让地名按新语言重新反查
+      compassLastGeoKey = '';
+
+      updateClock();
+      renderMapMarkers();
+      updateWorldClockTimes();
+    }
+
+    /* ---------------- 1. 屏保时钟逻辑 ---------------- */
+    function buildClockFace() {
+      const clock = document.getElementById('analogClock');
+      const ticksContainer = document.getElementById('ticksContainer');
+      const numbersContainer = document.getElementById('numbersContainer');
+      ticksContainer.innerHTML = '';
+      numbersContainer.innerHTML = '';
+
+      for (let i = 0; i < 60; i++) {
+        const tick = document.createElement('div');
+        tick.className = `tick ${i % 5 === 0 ? 'major' : ''}`;
+        tick.style.transform = `rotate(${i * 6}deg)`;
+        ticksContainer.appendChild(tick);
+      }
+
+      const clockWidth = clock.offsetWidth || 320;
+      const clockRadius = clockWidth / 2;
+      const numberRadius = clockRadius * 0.76;
+
+      for (let i = 1; i <= 12; i++) {
+        const num = document.createElement('div');
+        num.className = 'num';
+        num.innerText = i;
+        const angle = (i * 30 - 90) * (Math.PI / 180);
+        const x = clockRadius + numberRadius * Math.cos(angle);
+        const y = clockRadius + numberRadius * Math.sin(angle);
+        num.style.left = `${x}px`;
+        num.style.top = `${y}px`;
+        numbersContainer.appendChild(num);
+      }
+    }
+
+    const backgrounds = [
+      { id: 'black' },
+      { id: 'silver', color: '192,192,200' },
+      { id: 'blue', color: '74,144,255' },
+      { id: 'red', color: '255,90,82' },
+      { id: 'yellow', color: '240,200,72' }
+    ];
+
+    let clockTimer = null;
+    let clockMode = 'analog';
+    let bgAnimId = null;
+    let bgStartTime = 0;
+
+    function toggleClockMode() {
+      clockMode = clockMode === 'analog' ? 'digital' : 'analog';
+      const analogClock = document.getElementById('analogClock');
+      const digitalClock = document.getElementById('digitalClock');
+
+      if (clockMode === 'analog') {
+        analogClock.style.display = 'block';
+        digitalClock.style.display = 'none';
+        buildClockFace();
+      } else {
+        analogClock.style.display = 'none';
+        digitalClock.style.display = 'flex';
+      }
+      updateClock();
+    }
+
+    // macOS 漂移屏保风格：密集细线自顶部向下流动，线条间距逐渐展开
+    function drawBgFrame() {
+      const canvas = document.getElementById('bgCanvas');
+      const container = document.getElementById('bgContainer');
+      if (!canvas || !container) return;
+      const width = container.clientWidth;
+      const height = container.clientHeight;
+      if (canvas.width !== width || canvas.height !== height) {
+        canvas.width = width;
+        canvas.height = height;
+      }
+      const ctx = canvas.getContext('2d');
+      const t = (Date.now() - bgStartTime) / 1000;
+      const [r, g, b] = document.getElementById('bgContainer').dataset.themeColor.split(',').map(Number);
+
+      ctx.fillStyle = '#000';
+      ctx.fillRect(0, 0, width, height);
+      ctx.lineCap = 'round';
+
+      const lines = 56;
+      // 每条线固定归属一个横向位置槽，靠正弦叠加做漂移变形，形成密集流动的细线群
+      for (let i = 0; i < lines; i++) {
+        const slot = i / (lines - 1); // 0..1 归一化横向槽位
+        const drift = Math.sin(t * 0.35 + i * 0.7) * width * 0.045
+                    + Math.sin(t * 0.19 + i * 1.9) * width * 0.03;
+
+        const grad = ctx.createLinearGradient(0, 0, 0, height);
+        const fade = 0.25 + 0.75 * slot; // 底部线条更清晰
+        grad.addColorStop(0, `rgba(${r},${g},${b},0)`);
+        grad.addColorStop(0.12, `rgba(${r},${g},${b},${0.28 * fade})`);
+        grad.addColorStop(0.55, `rgba(${r},${g},${b},${0.5 * fade})`);
+        grad.addColorStop(1, `rgba(${r},${g},${b},${0.75 * fade})`);
+
+        ctx.beginPath();
+        let first = true;
+        for (let y = 0; y <= height; y += 6) {
+          const p = y / height;
+          // 波形幅度随深度增大：顶收底放，视觉上像从远处涌来
+          const spread = width * (0.16 + 0.5 * p * p);
+          const wob = Math.sin(p * 5.2 + t * 0.5 + i * 0.35) * width * 0.012 * (0.4 + p)
+                    + Math.sin(p * 11 + t * 0.3 - i * 0.22) * width * 0.007 * (0.3 + p);
+          const x = width / 2 + (slot - 0.5) * spread * 2 + drift * (0.35 + 0.65 * p) + wob;
+          if (first) { ctx.moveTo(x, y); first = false; } else { ctx.lineTo(x, y); }
+        }
+        ctx.strokeStyle = grad;
+        ctx.lineWidth = 1;
+        ctx.shadowColor = `rgba(${r},${g},${b},0.5)`;
+        ctx.shadowBlur = 6;
+        ctx.stroke();
+      }
+      ctx.shadowBlur = 0;
+      bgAnimId = requestAnimationFrame(drawBgFrame);
+    }
+
+    function stopBgAnimation() {
+      if (bgAnimId != null) { cancelAnimationFrame(bgAnimId); bgAnimId = null; }
+    }
+
+    function changeBackground(index) {
+      const mask = document.getElementById('overlayMask');
+      const item = backgrounds[index];
+
+      if (item.id === 'black') {
+        stopBgAnimation();
+        const canvas = document.getElementById('bgCanvas');
+        const ctx = canvas ? canvas.getContext('2d') : null;
+        if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
+        mask.style.display = 'none';
+      } else {
+        document.getElementById('bgContainer').dataset.themeColor = item.color;
+        stopBgAnimation();
+        bgStartTime = Date.now();
+        bgAnimId = requestAnimationFrame(drawBgFrame);
+        mask.style.display = 'block';
+      }
+
+      const thumbs = document.querySelectorAll('.bg-thumb');
+      thumbs.forEach((t, i) => t.classList.toggle('active', i === index));
+    }
+
+    function initBgSelector() {
+      const bgSelector = document.getElementById('bgSelector');
+      bgSelector.innerHTML = '';
+      backgrounds.forEach((item, index) => {
+        const thumb = document.createElement('div');
+        thumb.className = 'bg-thumb';
+        if (item.id === 'black') {
+          thumb.classList.add('black-thumb');
+        } else {
+          thumb.style.background = `rgb(${item.color})`;
+        }
+        thumb.onclick = () => changeBackground(index);
+        bgSelector.appendChild(thumb);
+      });
+      changeBackground(0);
+    }
+
+    function updateClock() {
+      const now = new Date();
+      const seconds = now.getSeconds();
+      const minutes = now.getMinutes();
+      const hours = now.getHours();
+
+      document.getElementById('secondHand').style.transform = `rotate(${(seconds / 60) * 360}deg)`;
+      document.getElementById('minuteHand').style.transform = `rotate(${((minutes + seconds / 60) / 60) * 360}deg)`;
+      document.getElementById('hourHand').style.transform = `rotate(${(((hours % 12) + minutes / 60) / 12) * 360}deg)`;
+
+      const pad = (n) => n.toString().padStart(2, '0');
+      document.getElementById('flipHours').innerText = pad(hours);
+      document.getElementById('flipMinutes').innerText = pad(minutes);
+
+      const options = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' };
+      document.getElementById('dateDisplay').innerText = now.toLocaleDateString(currentLang === 'zh' ? 'zh-CN' : 'en-US', options);
+    }
+
+    // 屏保控件闲置 3 秒自动隐藏，鼠标/触摸唤醒，实现真正的全屏沉浸
+    let saverIdleTimer = null;
+
+    function resetSaverIdle() {
+      const overlay = document.getElementById('screensaverOverlay');
+      if (!overlay.classList.contains('active')) return;
+      overlay.classList.remove('ui-hidden');
+      if (saverIdleTimer) clearTimeout(saverIdleTimer);
+      saverIdleTimer = setTimeout(() => overlay.classList.add('ui-hidden'), 1000);
+    }
+
+    ['mousemove', 'touchstart', 'click', 'keydown'].forEach(evt => {
+      document.addEventListener(evt, () => {
+        const overlay = document.getElementById('screensaverOverlay');
+        if (overlay.classList.contains('active')) resetSaverIdle();
+      }, { passive: true });
+    });
+
+    // 浏览器全屏：连地址栏/标签栏一起隐藏，真正的全屏沉浸
+    function enterBrowserFullscreen() {
+      const el = document.documentElement;
+      const request = el.requestFullscreen || el.webkitRequestFullscreen;
+      if (request && !document.fullscreenElement && !document.webkitFullscreenElement) {
+        request.call(el).catch(() => {});
+      }
+    }
+
+    function exitBrowserFullscreen() {
+      const exit = document.exitFullscreen || document.webkitExitFullscreen;
+      if (exit && (document.fullscreenElement || document.webkitFullscreenElement)) {
+        exit.call(document).catch(() => {});
+      }
+    }
+
+    document.addEventListener('fullscreenchange', () => {
+      // 用户按 Esc 退出浏览器全屏时，同步关闭屏保
+      if (!document.fullscreenElement && document.getElementById('screensaverOverlay').classList.contains('active')) {
+        closeClockSaver();
+      }
+    });
+
+    function openClockSaver() {
+      document.getElementById('screensaverOverlay').classList.add('active');
+      enterBrowserFullscreen();
+      buildClockFace();
+      initBgSelector();
+      updateClock();
+      clockTimer = setInterval(updateClock, 1000);
+      resetSaverIdle();
+    }
+
+    function closeClockSaver() {
+      document.getElementById('screensaverOverlay').classList.remove('active');
+      exitBrowserFullscreen();
+      if (clockTimer) clearInterval(clockTimer);
+      stopBgAnimation();
+      if (saverIdleTimer) { clearTimeout(saverIdleTimer); saverIdleTimer = null; }
+      document.getElementById('screensaverOverlay').classList.remove('ui-hidden');
+    }
+
+    /* ---------------- 2. 自定义计时器 ---------------- */
+    let timerInterval = null;
+    let timerEndAt = 0;
+    let timerRemainingMs = 0;
+    let timerInitialMs = 0;
+    let timerRunning = false;
+    let timerStartPending = false;
+    let timerCompleted = false;
+    let timerWheelSyncing = false;
+    let timerRunningName = '';
+
+    function openTimer() {
+      document.getElementById('timerOverlay').classList.add('active');
+      if (!timerRunning && !timerRemainingMs) resetTimer();
+      updateTimerDisplay();
+    }
+
+    function closeTimer() {
+      document.getElementById('timerOverlay').classList.remove('active');
+    }
+
+    function stopTimerInterval() {
+      if (timerInterval) clearInterval(timerInterval);
+      timerInterval = null;
+      timerRunning = false;
+    }
+
+    function timerTick() {
+      if (!timerRunning) return;
+      timerRemainingMs = Math.max(0, timerEndAt - Date.now());
+      updateTimerDisplay();
+      if (timerRemainingMs <= 0) finishTimer();
+    }
+
+    // 运行时逐帧刷新，保证进度环平滑而非每 250ms 跳一格
+    function timerFrame() {
+      if (!timerRunning) return;
+      timerRemainingMs = Math.max(0, timerEndAt - Date.now());
+      updateTimerDisplay();
+      if (timerRemainingMs <= 0) {
+        finishTimer();
+        return;
+      }
+      requestAnimationFrame(timerFrame);
+    }
+
+    function startTimerInterval() {
+      if (timerInterval) clearInterval(timerInterval);
+      // 后台标签页 rAF 会被暂停，保留 1s 低频 tick 兜底
+      timerInterval = setInterval(timerTick, 1000);
+      requestAnimationFrame(timerFrame);
+    }
+
+    function readTimerInputs() {
+      const hours = Math.max(0, Math.min(23, Number.parseInt(document.getElementById('timerHours').value, 10) || 0));
+      const minutes = Math.max(0, Math.min(59, Number.parseInt(document.getElementById('timerMinutes').value, 10) || 0));
+      const seconds = Math.max(0, Math.min(59, Number.parseInt(document.getElementById('timerSeconds').value, 10) || 0));
+      return ((hours * 60 + minutes) * 60 + seconds) * 1000;
+    }
+
+    function formatTimer(ms) {
+      const totalSeconds = Math.max(0, Math.ceil(ms / 1000));
+      const hours = Math.floor(totalSeconds / 3600);
+      const minutes = Math.floor((totalSeconds % 3600) / 60);
+      const seconds = totalSeconds % 60;
+      return [hours, minutes, seconds].map(value => String(value).padStart(2, '0')).join(':');
+    }
+
+    function formatRunningTimer(ms) {
+      const totalSeconds = Math.max(0, Math.ceil(ms / 1000));
+      const hours = Math.floor(totalSeconds / 3600);
+      const minutes = Math.floor((totalSeconds % 3600) / 60);
+      const seconds = totalSeconds % 60;
+      return hours > 0
+        ? [hours, minutes, seconds].map(value => String(value).padStart(2, '0')).join(':')
+        : `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+    }
+
+    function updateTimerDisplay(forcedMs) {
+      const remaining = Number.isFinite(forcedMs)
+        ? forcedMs
+        : (timerRunning ? Math.max(0, timerEndAt - Date.now()) : timerRemainingMs || readTimerInputs());
+      const runningDisplay = document.getElementById('timerRunningDisplay');
+      const formatted = formatRunningTimer(remaining);
+      if (runningDisplay) {
+        runningDisplay.innerText = formatted;
+        runningDisplay.classList.toggle('long', remaining >= 3600000);
+      }
+      const ring = document.getElementById('timerRing');
+      if (ring) ring.style.setProperty('--timer-progress', `${timerInitialMs ? Math.max(0, Math.min(100, remaining / timerInitialMs * 100)) : 100}%`);
+    }
+
+    async function requestTimerNotificationPermission() {
+      if (!('Notification' in window)) return false;
+      if (Notification.permission === 'granted') return true;
+      if (Notification.permission === 'denied') return false;
+      try {
+        return (await Notification.requestPermission()) === 'granted';
+      } catch (err) {
+        return false;
+      }
+    }
+
+    function finishTimer() {
+      stopTimerInterval();
+      timerRemainingMs = 0;
+      timerCompleted = true;
+      updateTimerDisplay(0);
+      const t = i18n[currentLang];
+      const resetButton = document.getElementById('timer-running-cancel-btn');
+      const completeButton = document.getElementById('timer-pause-btn');
+      // 完成后：Reset = 按原时长重新倒计时；Complete = 返回设置界面
+      resetButton.innerText = t.timerReset;
+      resetButton.onclick = restartTimer;
+      completeButton.innerText = t.timerComplete;
+      completeButton.onclick = completeTimer;
+      completeButton.classList.remove('timer-resume');
+      const status = document.getElementById('timerStatus');
+      status.innerText = t.timerFinished;
+      status.style.color = '#d4af37';
+      const timerName = (timerRunningName || '').trim();
+      const notifyTitle = timerName || t.timerFinished;
+      const notifyBody = timerName
+        ? t.timerFinished
+        : (currentLang === 'zh' ? '自定义计时器已结束。' : 'Your custom timer has finished.');
+      if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification(notifyTitle, { body: notifyBody });
+      } else if ('vibrate' in navigator) {
+        navigator.vibrate([200, 100, 200]);
+      }
+      document.title = notifyTitle;
+      setTimeout(() => { document.title = 'Utility | Yongjian Wang'; }, 4000);
+    }
+
+    // 计时完成后按原时长重新开始倒计时
+    function restartTimer() {
+      if (!timerInitialMs) { resetTimer(); return; }
+      timerRemainingMs = timerInitialMs;
+      timerCompleted = false;
+      timerEndAt = Date.now() + timerRemainingMs;
+      timerRunning = true;
+      const t = i18n[currentLang];
+      const resetButton = document.getElementById('timer-running-cancel-btn');
+      const pauseButton = document.getElementById('timer-pause-btn');
+      resetButton.innerText = t.timerCancel;
+      resetButton.onclick = resetTimer;
+      pauseButton.innerText = t.timerPause;
+      pauseButton.onclick = pauseTimer;
+      pauseButton.classList.remove('timer-resume');
+      const status = document.getElementById('timerStatus');
+      status.classList.remove('timer-error');
+      status.innerText = t.timerRunning;
+      status.style.color = '#999';
+      startTimerInterval();
+      updateTimerDisplay();
+    }
+
+    async function startTimer() {
+      if (timerRunning || timerStartPending) return;
+      if (!timerRemainingMs) timerRemainingMs = readTimerInputs();
+      if (timerRemainingMs <= 0) {
+        const status = document.getElementById('timerStatus');
+        status.innerText = currentLang === 'zh' ? '请先设置大于 0 的时间。' : 'Please set a duration greater than 0 before starting.';
+        status.classList.add('timer-error');
+        return;
+      }
+      timerStartPending = true;
+      const notificationAllowed = await requestTimerNotificationPermission();
+      timerStartPending = false;
+      if (timerRunning || timerRemainingMs <= 0) return;
+      timerInitialMs = timerRemainingMs;
+      timerCompleted = false;
+      timerEndAt = Date.now() + timerRemainingMs;
+      timerRunning = true;
+      timerRunningName = (document.getElementById('timerName').value || '').trim();
+      document.getElementById('timerRunningClock').innerText = timerRunningName || i18n[currentLang].timerLabel;
+      document.getElementById('timerSetupView').classList.add('hidden');
+      document.getElementById('timerRunningView').classList.add('active');
+      document.getElementById('timer-running-cancel-btn').innerText = i18n[currentLang].timerCancel;
+      document.getElementById('timer-running-cancel-btn').onclick = resetTimer;
+      document.getElementById('timer-pause-btn').innerText = i18n[currentLang].timerPause;
+      document.getElementById('timer-pause-btn').onclick = pauseTimer;
+      document.getElementById('timer-pause-btn').classList.remove('timer-resume');
+      const status = document.getElementById('timerStatus');
+      status.classList.remove('timer-error');
+      status.innerText = notificationAllowed ? i18n[currentLang].timerRunning : i18n[currentLang].timerNotificationDenied;
+      status.style.color = '#999';
+      startTimerInterval();
+      updateTimerDisplay();
+    }
+
+    function pauseTimer() {
+      if (!timerRunning) {
+        if (timerRemainingMs <= 0) return;
+        timerEndAt = Date.now() + timerRemainingMs;
+        timerRunning = true;
+        const pauseButton = document.getElementById('timer-pause-btn');
+        pauseButton.innerText = i18n[currentLang].timerPause;
+        pauseButton.classList.remove('timer-resume');
+        startTimerInterval();
+        document.getElementById('timerStatus').innerText = i18n[currentLang].timerRunning;
+        return;
+      }
+      timerRemainingMs = Math.max(0, timerEndAt - Date.now());
+      stopTimerInterval();
+      updateTimerDisplay();
+      document.getElementById('timerStatus').innerText = currentLang === 'zh' ? '已暂停' : 'Paused';
+      const pauseButton = document.getElementById('timer-pause-btn');
+      pauseButton.innerText = currentLang === 'zh' ? '继续' : 'Resume';
+      pauseButton.classList.add('timer-resume');
+    }
+
+    function resetTimer() {
+      stopTimerInterval();
+      timerRemainingMs = 0;
+      timerInitialMs = 0;
+      timerCompleted = false;
+      timerRunningName = '';
+      document.getElementById('timerName').value = '';
+      document.getElementById('timerHours').value = '00';
+      document.getElementById('timerMinutes').value = '00';
+      document.getElementById('timerSeconds').value = '00';
+      syncTimerWheelPicker();
+      document.getElementById('timerSetupView').classList.remove('hidden');
+      document.getElementById('timerRunningView').classList.remove('active');
+      document.getElementById('timer-running-cancel-btn').innerText = i18n[currentLang].timerCancel;
+      document.getElementById('timer-running-cancel-btn').onclick = resetTimer;
+      document.getElementById('timer-pause-btn').innerText = i18n[currentLang].timerPause;
+      document.getElementById('timer-pause-btn').onclick = pauseTimer;
+      document.getElementById('timer-pause-btn').classList.remove('timer-resume');
+      updateTimerDisplay(0);
+      const status = document.getElementById('timerStatus');
+      status.classList.remove('timer-error');
+      status.innerText = i18n[currentLang].timerReady;
+      status.style.color = '#999';
+    }
+
+    function completeTimer() {
+      // 完成后返回计时器的时间设置界面（保持在计时器内，不关闭面板）
+      resetTimer();
+    }
+
+    function setupTimerWheelPicker() {
+      const definitions = [
+        { input: 'timerHours', wheel: 'wheelHours', max: 23, suffix: 'hours' },
+        { input: 'timerMinutes', wheel: 'wheelMinutes', max: 59, suffix: 'min' },
+        { input: 'timerSeconds', wheel: 'wheelSeconds', max: 59, suffix: 'sec' }
+      ];
+      definitions.forEach(({ input, wheel, max, suffix }) => {
+        const options = document.getElementById(wheel);
+        const column = options.parentElement;
+        for (let value = 0; value <= max; value += 1) {
+          const option = document.createElement('div');
+          option.className = 'timer-wheel-option';
+          option.dataset.value = value;
+          option.innerText = String(value).padStart(2, '0');
+          option.addEventListener('click', () => column.scrollTo({ top: value * 48, behavior: 'smooth' }));
+          options.appendChild(option);
+        }
+        let scrollTimer = null;
+        column.addEventListener('scroll', () => {
+          clearTimeout(scrollTimer);
+          scrollTimer = setTimeout(() => {
+            if (timerWheelSyncing) return;
+            const value = Math.max(0, Math.min(max, Math.round(column.scrollTop / 48)));
+            column.scrollTo({ top: value * 48, behavior: 'smooth' });
+            const optionsList = [...options.querySelectorAll('.timer-wheel-option')];
+            document.getElementById(input).value = String(value).padStart(2, '0');
+            optionsList.forEach(item => item.classList.toggle('selected', Number(item.dataset.value) === value));
+          }, 60);
+        });
+      });
+      syncTimerWheelPicker();
+    }
+
+    function syncTimerWheelPicker() {
+      timerWheelSyncing = true;
+      document.querySelectorAll('.timer-wheel-column').forEach(column => {
+        const input = document.getElementById(column.dataset.input);
+        if (!input) return;
+        const value = Number.parseInt(input.value, 10) || 0;
+        column.scrollTop = value * 48;
+        column.querySelectorAll('.timer-wheel-option').forEach(item => item.classList.toggle('selected', Number(item.dataset.value) === value));
+      });
+      setTimeout(() => { timerWheelSyncing = false; }, 150);
+    }
+
+    ['timerHours', 'timerMinutes', 'timerSeconds'].forEach((id) => {
+      const input = document.getElementById(id);
+      input.addEventListener('input', () => {
+        input.value = input.value.replace(/\D/g, '').slice(0, 2);
+      });
+      input.addEventListener('blur', () => {
+        const max = id === 'timerHours' ? 23 : 59;
+        const value = Math.min(max, Number.parseInt(input.value, 10) || 0);
+        input.value = String(value).padStart(2, '0');
+      });
+    });
+    setupTimerWheelPicker();
+
+    /* ---------------- 3. 世界时钟 (矢量高精 GeoJSON 渲染) ---------------- */
+    const baseP5Cities = [
+      { id: 'beijing', nameEn: 'Beijing', nameZh: '北京', lat: 39.9042, lon: 116.4074, tz: 'Asia/Shanghai' },
+      { id: 'london', nameEn: 'London', nameZh: '伦敦', lat: 51.5074, lon: -0.1278, tz: 'Europe/London' },
+      { id: 'paris', nameEn: 'Paris', nameZh: '巴黎', lat: 48.8566, lon: 2.3522, tz: 'Europe/Paris' },
+      { id: 'moscow', nameEn: 'Moscow', nameZh: '莫斯科', lat: 55.7558, lon: 37.6173, tz: 'Europe/Moscow' },
+      { id: 'washington', nameEn: 'Washington D.C.', nameZh: '华盛顿', lat: 38.9072, lon: -77.0369, tz: 'America/New_York' }
+    ];
+
+    let fullCityList = [];
+    let worldClockTimer = null;
+    let worldGeoData = null;
+
+    async function loadGeoData() {
+      if (worldGeoData) return;
+      try {
+        const response = await fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json');
+        const topoData = await response.json();
+        worldGeoData = topojson.feature(topoData, topoData.objects.countries);
+      } catch (err) {
+        console.error("加载 GeoJSON 数据失败:", err);
+      }
+    }
+
+    function setupCityList() {
+      const userTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      const existingMatch = baseP5Cities.find(c => c.tz === userTz);
+
+      if (existingMatch) {
+        const filtered = baseP5Cities.filter(c => c.id !== existingMatch.id);
+        fullCityList = [{ ...existingMatch, isLocal: true }, ...filtered];
+      } else {
+        const localCity = {
+          id: 'local-location',
+          nameEn: 'Your Location',
+          nameZh: '本地时间',
+          lat: 20, lon: 0,
+          tz: userTz,
+          isLocal: true
+        };
+        fullCityList = [localCity, ...baseP5Cities];
+      }
+    }
+
+    function getSunPosition(date) {
+      const startOfYear = new Date(date.getUTCFullYear(), 0, 0);
+      const dayOfYear = Math.floor((date - startOfYear) / (1000 * 60 * 60 * 24));
+      const declination = -23.44 * Math.cos((2 * Math.PI / 365) * (dayOfYear + 10));
+
+      const utcHours = date.getUTCHours() + date.getUTCMinutes() / 60 + date.getUTCSeconds() / 3600;
+      let sunLon = 180 - (utcHours / 24) * 360;
+      if (sunLon < -180) sunLon += 360;
+      if (sunLon > 180) sunLon -= 360;
+
+      return { declination, sunLon };
+    }
+
+    // 动态绘制地图，完全匹配容器尺寸并保证比例合适
+    function drawDaylightMap() {
+      const canvas = document.getElementById('daylightCanvas');
+      if (!canvas) return;
+      const container = canvas.parentElement;
+      if (!container) return;
+
+      const width = Math.round(container.getBoundingClientRect().width);
+      const height = Math.round(container.getBoundingClientRect().height);
+
+      if (width === 0 || height === 0) return;
+
+      const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+      canvas.width = Math.round(width * pixelRatio);
+      canvas.height = Math.round(height * pixelRatio);
+      canvas.style.width = `${width}px`;
+      canvas.style.height = `${height}px`;
+
+      const ctx = canvas.getContext('2d');
+      ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+      /* 地图配色随主题切换：浅色用浅灰海洋+近白陆地，深色保持原夜视配色 */
+      const mapC = document.documentElement.classList.contains('light')
+        ? { ocean: '#dcd9d2', grid: 'rgba(0,0,0,0.10)', land: '#f4f2ed',
+            border: 'rgba(90,90,96,0.55)', term: 'rgba(120,90,20,0.95)',
+            termShadow: 'rgba(212,175,55,0.35)' }
+        : { ocean: '#050505', grid: 'rgba(255,255,255,0.08)', land: '#202124',
+            border: 'rgba(150,154,162,0.48)', term: 'rgba(235,235,240,0.95)',
+            termShadow: 'rgba(255,255,255,0.5)' };
+      ctx.fillStyle = mapC.ocean;
+      ctx.fillRect(0, 0, width, height);
+
+      // 使用正常等距圆柱投影，保持国家边界的真实形状并完整容纳世界范围
+      const scale = Math.min(width / (2 * Math.PI), height / Math.PI);
+      const projection = d3.geoEquirectangular()
+        .scale(scale)
+        .translate([width / 2, height / 2]);
+
+      const pathGenerator = d3.geoPath().projection(projection).context(ctx);
+
+      // 网格线
+      ctx.beginPath();
+      const graticule = d3.geoGraticule().step([15, 15]);
+      pathGenerator(graticule());
+      ctx.strokeStyle = mapC.grid;
+      ctx.lineWidth = 0.8;
+      ctx.stroke();
+
+      // 国家边界与陆地填充
+      if (worldGeoData) {
+        ctx.beginPath();
+        pathGenerator(worldGeoData);
+        ctx.fillStyle = mapC.land;
+        ctx.fill();
+        ctx.strokeStyle = mapC.border;
+        ctx.lineWidth = 0.7;
+        ctx.stroke();
+      }
+
+      // 晨昏线计算与绘制
+      const now = new Date();
+      const { declination, sunLon } = getSunPosition(now);
+      const decRad = declination * (Math.PI / 180);
+
+      ctx.beginPath();
+      let firstPoint = true;
+
+      for (let x = 0; x <= width; x += 2) {
+        const coords = projection.invert([x, height / 2]);
+        if (!coords) continue;
+        const lon = coords[0];
+        const lonRad = (lon - sunLon) * (Math.PI / 180);
+
+        let latRad = Math.atan(-Math.cos(lonRad) / Math.tan(decRad));
+        let lat = latRad * (180 / Math.PI);
+        lat = Math.max(-85, Math.min(85, lat));
+
+        const pointPos = projection([lon, lat]);
+        if (pointPos) {
+          if (firstPoint) {
+            ctx.moveTo(pointPos[0], pointPos[1]);
+            firstPoint = false;
+          } else {
+            ctx.lineTo(pointPos[0], pointPos[1]);
+          }
+        }
+      }
+
+      ctx.strokeStyle = mapC.term;
+      ctx.lineWidth = 1.5;
+      ctx.shadowColor = mapC.termShadow;
+      ctx.shadowBlur = 6;
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+
+      updateMapMarkersPosition(projection);
+    }
+
+    function renderMapMarkers() {
+      const layer = document.getElementById('mapMarkersLayer');
+      layer.innerHTML = '';
+
+      fullCityList.forEach(city => {
+        if (city.id === 'local-location') return;
+
+        const item = document.createElement('div');
+        item.className = 'map-dot-item';
+        item.id = `dot-${city.id}`;
+        item.innerHTML = `
+          <div class="map-dot"></div>
+          <div class="map-dot-label" id="label-${city.id}">
+            ${currentLang === 'zh' ? city.nameZh : city.nameEn}
+            <span class="time-text" id="mtime-tag-${city.id}">00:00</span>
+          </div>
+        `;
+        layer.appendChild(item);
+      });
+    }
+
+    function updateMapMarkersPosition(projection) {
+      const now = new Date();
+      const placedLabels = [];
+
+      fullCityList.forEach(city => {
+        if (city.id === 'local-location') return;
+        const pos = projection([city.lon, city.lat]);
+        const item = document.getElementById(`dot-${city.id}`);
+        const label = document.getElementById(`label-${city.id}`);
+        const timeTag = document.getElementById(`mtime-tag-${city.id}`);
+
+        if (!item || !pos) return;
+
+        item.style.left = `${pos[0]}px`;
+        item.style.top = `${pos[1]}px`;
+
+        if (timeTag) {
+          timeTag.innerText = now.toLocaleTimeString('en-GB', {
+            timeZone: city.tz, hour: '2-digit', minute: '2-digit', hour12: false
+          });
+        }
+
+        if (label) {
+          let offsetY = -15;
+          let offsetX = 12;
+
+          if (city.id === 'london') {
+            offsetY = -18;
+          } else if (city.id === 'paris') {
+            offsetY = 15;
+          } else if (city.id === 'washington') {
+            offsetY = -25;
+          }
+
+          label.style.top = `calc(50% + ${offsetY}px)`;
+          label.style.left = `${offsetX}px`;
+
+          const rect = label.getBoundingClientRect();
+          let hasOverlap = false;
+
+          for (const placed of placedLabels) {
+            if (!(rect.right < placed.left ||
+                  rect.left > placed.right ||
+                  rect.bottom < placed.top ||
+                  rect.top > placed.bottom)) {
+              hasOverlap = true;
+              break;
+            }
+          }
+
+          if (hasOverlap && city.id !== 'london') {
+            offsetY += 25;
+            label.style.top = `calc(50% + ${offsetY}px)`;
+          }
+
+          const updatedRect = label.getBoundingClientRect();
+          placedLabels.push({
+            left: updatedRect.left,
+            right: updatedRect.right,
+            top: updatedRect.top,
+            bottom: updatedRect.bottom
+          });
+        }
+      });
+    }
+
+    function renderClockUI() {
+      const grid = document.getElementById('desktopCardsGrid');
+      const mobileList = document.getElementById('mobileClockList');
+      grid.innerHTML = '';
+      mobileList.innerHTML = '';
+
+      fullCityList.forEach(city => {
+        const isLocal = city.isLocal;
+        const localBadge = isLocal ? `<span class="local-badge">${i18n[currentLang].localLabel}</span>` : '';
+
+        const desktopCard = document.createElement('div');
+        desktopCard.className = `desktop-city-card ${isLocal ? 'local-card' : ''}`;
+        desktopCard.innerHTML = `
+          <div class="card-city-name">
+            ${currentLang === 'zh' ? city.nameZh : city.nameEn} ${localBadge}
+          </div>
+          <div class="card-city-time" id="dtime-${city.id}">00:00</div>
+          <div class="card-city-meta">
+            <span id="ddate-${city.id}">--</span>
+            <span id="ddiff-${city.id}">--</span>
+          </div>
+        `;
+        grid.appendChild(desktopCard);
+
+        const mobileItem = document.createElement('div');
+        mobileItem.className = `mobile-clock-item ${isLocal ? 'local-item' : ''}`;
+        mobileItem.innerHTML = `
+          <div class="mobile-item-left">
+            <div class="mobile-city-title">
+              ${currentLang === 'zh' ? city.nameZh : city.nameEn} ${localBadge}
+            </div>
+            <div class="mobile-city-subtitle" id="mdate-${city.id}">--</div>
+          </div>
+          <div class="mobile-city-time" id="mtime-${city.id}">00:00</div>
+        `;
+        mobileList.appendChild(mobileItem);
+      });
+    }
+
+    function updateWorldClockTimes() {
+      const now = new Date();
+
+      fullCityList.forEach(city => {
+        const timeStr = now.toLocaleTimeString('en-GB', {
+          timeZone: city.tz, hour: '2-digit', minute: '2-digit', hour12: false
+        });
+
+        const dateStr = now.toLocaleDateString(currentLang === 'zh' ? 'zh-CN' : 'en-US', {
+          timeZone: city.tz, month: 'short', day: 'numeric', weekday: 'short'
+        });
+
+        const cityDate = new Date(now.toLocaleString('en-US', { timeZone: city.tz }));
+        const localDate = new Date(now.toLocaleString('en-US'));
+        const diffHours = Math.round((cityDate - localDate) / 3600000);
+        const diffStr = diffHours === 0 ? '0 HRS' : (diffHours > 0 ? `+${diffHours} HRS` : `${diffHours} HRS`);
+
+        const dt = document.getElementById(`dtime-${city.id}`);
+        const dd = document.getElementById(`ddate-${city.id}`);
+        const df = document.getElementById(`ddiff-${city.id}`);
+        const mt = document.getElementById(`mtime-${city.id}`);
+        const md = document.getElementById(`mdate-${city.id}`);
+
+        if (dt) dt.innerText = timeStr;
+        if (dd) dd.innerText = dateStr;
+        if (df) df.innerText = diffStr;
+        if (mt) mt.innerText = timeStr;
+        if (md) md.innerText = `${dateStr} · ${diffStr}`;
+      });
+    }
+
+    async function openWorldClock() {
+      const modal = document.getElementById('worldClockOverlay');
+      modal.classList.add('active');
+      setupCityList();
+      renderClockUI();
+      renderMapMarkers();
+
+      await loadGeoData();
+
+      // 使用 requestAnimationFrame 延迟一帧，确保模态框完全展开并计算出高度后再绘制地图
+      requestAnimationFrame(() => {
+        drawDaylightMap();
+        updateWorldClockTimes();
+      });
+
+      worldClockTimer = setInterval(() => {
+        drawDaylightMap();
+        updateWorldClockTimes();
+      }, 1000);
+    }
+
+    function closeWorldClock() {
+      document.getElementById('worldClockOverlay').classList.remove('active');
+      if (worldClockTimer) clearInterval(worldClockTimer);
+    }
+
+    // 监听地图容器本身，确保拖拽调整窗口时尺寸变化立即同步
+    const mapSection = document.querySelector('.map-section');
+    if (mapSection && 'ResizeObserver' in window) {
+      new ResizeObserver(() => {
+        const worldModal = document.getElementById('worldClockOverlay');
+        if (worldModal && worldModal.classList.contains('active')) drawDaylightMap();
+      }).observe(mapSection);
+    }
+
+    // 全局Resize事件监听，覆盖全屏切换等布局变化
+    window.addEventListener('resize', () => {
+      const worldModal = document.getElementById('worldClockOverlay');
+      if (worldModal && worldModal.classList.contains('active')) {
+        drawDaylightMap();
+      }
+      const compassOverlay = document.getElementById('compassOverlay');
+      if (compassOverlay && compassOverlay.classList.contains('active')) {
+        buildCompassDial();
+        const orb = document.getElementById('compassSensorOrb');
+        if (orb && !orb.hidden) buildOrbDial();
+      }
+    });
+
+    /* ---------------- 4. 地图 / 指南针 / 翻译 ---------------- */
+    const linkModalConfig = {
+      maps: {
+        url: 'https://maps.apple.com.cn',
+        icon: '<svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18 3 21V6l6-3 6 3 6-3v15l-6 3-6-3Z"/><path d="M9 3v15M15 6v15"/></svg>',
+        titleKey: 'mapsTitle',
+        descKey: 'mapsModalDesc'
+      },
+      translator: {
+        url: 'https://www.bing.com/translator?setmkt=zh-cn&setlang=zh-cn',
+        icon: '<svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 8 6 6"/><path d="m4 14 6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="m22 22-5-10-5 10"/><path d="M14 18h6"/></svg>',
+        titleKey: 'translatorTitle',
+        descKey: 'translatorModalDesc'
+      }
+    };
+
+    let linkModalTool = null;
+
+    function updateLinkModalContent() {
+      if (!linkModalTool) return;
+      const config = linkModalConfig[linkModalTool];
+      const t = i18n[currentLang];
+      document.getElementById('linkModalIcon').innerHTML = config.icon;
+      document.getElementById('linkModalTitle').innerText = t[config.titleKey];
+      document.getElementById('linkModalDesc').innerText = t[config.descKey];
+      document.getElementById('link-visit-btn').innerText = t.linkVisitBtn;
+    }
+
+    function showLinkModal(tool) {
+      linkModalTool = tool;
+      updateLinkModalContent();
+      document.getElementById('linkModalOverlay').classList.add('active');
+    }
+
+    function closeLinkModal() {
+      document.getElementById('linkModalOverlay').classList.remove('active');
+      linkModalTool = null;
+    }
+
+    function handleLinkModalBackdrop(event) {
+      if (event.target === document.getElementById('linkModalOverlay')) closeLinkModal();
+    }
+
+    function confirmLinkVisit() {
+      if (linkModalTool) {
+        window.open(linkModalConfig[linkModalTool].url, '_blank', 'noopener');
+      }
+      closeLinkModal();
+    }
+
+    function openAppleMaps() {
+      showLinkModal('maps');
+    }
+
+    function openBingTranslator() {
+      showLinkModal('translator');
+    }
+
+    /* 移动设备提示弹窗（电脑端打开指南针时） */
+    function isMobileDevice() {
+      return ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+    }
+
+    function updateDeviceNoticeContent() {
+      const t = i18n[currentLang];
+      document.getElementById('deviceNoticeTitle').innerText = t.deviceNoticeTitle;
+      document.getElementById('deviceNoticeDesc').innerText = t.deviceNoticeDesc;
+      document.getElementById('device-ok-btn').innerText = t.deviceOkBtn;
+    }
+
+    function showDeviceNotice() {
+      updateDeviceNoticeContent();
+      document.getElementById('deviceNoticeOverlay').classList.add('active');
+    }
+
+    function closeDeviceNotice() {
+      document.getElementById('deviceNoticeOverlay').classList.remove('active');
+    }
+
+    function handleDeviceNoticeBackdrop(event) {
+      if (event.target === document.getElementById('deviceNoticeOverlay')) closeDeviceNotice();
+    }
+
+    let compassOrientationHandler = null;
+    let compassWatchId = null;
+    let compassLastHeading = null;
+    let compassDialRotation = 0;
+    let compassNoSensorReported = false;
+    let compassLastGeoKey = '';
+    /* 高频 60fps 渲染下缓存 DOM 引用与上次写入值，避免逐帧 getElementById 与无谓文本写入 */
+    let compassEls = null;
+    let compassLastDeg = null;
+    let compassLastDir = null;
+
+    function cacheCompassEls() {
+      compassEls = {
+        rotor: document.getElementById('compassRotor'),
+        cardN: document.getElementById('compassCardN'),
+        cardE: document.getElementById('compassCardE'),
+        cardS: document.getElementById('compassCardS'),
+        cardW: document.getElementById('compassCardW'),
+        degText: document.getElementById('compassDegreeText'),
+        dirText: document.getElementById('compassDirText')
+      };
+    }
+
+    function setCompassStatus(text) {
+      const status = document.getElementById('compassStatus');
+      if (status) status.innerText = text || '';
+    }
+
+    function formatCompassCoord(value, positive, negative) {
+      const direction = value >= 0 ? positive : negative;
+      return `${Math.abs(value).toFixed(5)}° ${direction}`;
+    }
+
+    // 生成 iOS 风格表盘：细密刻度环 + 环外度数标签 + 方位字母
+    function buildCompassDial() {
+      const stage = document.getElementById('compassStage');
+      const ticksBox = document.getElementById('compassTicks');
+      const labelsBox = document.getElementById('compassDegLabels');
+      if (!stage || !ticksBox || !labelsBox) return;
+
+      ticksBox.innerHTML = '';
+      labelsBox.innerHTML = '';
+
+      for (let deg = 0; deg < 360; deg += 3) {
+        const tick = document.createElement('div');
+        tick.className = 'compass-tick' + (deg % 30 === 0 ? ' major' : deg % 15 === 0 ? ' mid' : '');
+        tick.style.transform = `rotate(${deg}deg)`;
+        ticksBox.appendChild(tick);
+      }
+
+      const size = stage.offsetWidth;
+      if (!size) return;
+      const cx = size / 2, cy = size / 2;
+      const labelR = size / 2 - 14;
+      const cardR = size * 0.30;
+
+      for (let deg = 0; deg < 360; deg += 30) {
+        const label = document.createElement('span');
+        label.className = 'compass-deg-label';
+        label.innerText = deg;
+        const rad = (deg - 90) * Math.PI / 180;
+        label.style.left = `${cx + labelR * Math.cos(rad)}px`;
+        label.style.top = `${cy + labelR * Math.sin(rad)}px`;
+        label.style.transform = `translate(-50%, -50%) rotate(${deg}deg)`;
+        labelsBox.appendChild(label);
+      }
+
+      ['N', 'E', 'S', 'W'].forEach((letter, index) => {
+        const el = document.getElementById('compassCard' + letter);
+        if (!el) return;
+        const rad = (index * 90 - 90) * Math.PI / 180;
+        el.style.left = `${cx + cardR * Math.cos(rad)}px`;
+        el.style.top = `${cy + cardR * Math.sin(rad)}px`;
+        el.style.transform = 'translate(-50%, -50%)';
+      });
+    }
+
+    function fetchWithTimeout(url, ms) {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), ms);
+      return fetch(url, { signal: controller.signal })
+        .finally(() => clearTimeout(timer));
+    }
+
+    function setCompassPlace(text) {
+      document.getElementById('compassLocation').innerText = text || '--';
+    }
+
+    async function reverseGeocode(lat, lon) {
+      // 约 1km 粒度缓存，避免频繁请求
+      const key = `${lat.toFixed(2)},${lon.toFixed(2)}`;
+      if (key === compassLastGeoKey) return;
+      compassLastGeoKey = key;
+      const lang = currentLang === 'zh' ? 'zh-CN' : 'en';
+
+      // 源 1：BigDataCloud（免密钥、支持浏览器直连、国内可达性较好）
+      try {
+        const response = await fetchWithTimeout(
+          `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=${lang}`,
+          5000
+        );
+        const data = await response.json();
+        const city = data.city || data.locality || data.principalSubdivision || '';
+        const country = data.countryName || '';
+        const place = [city, country].filter(Boolean).join(', ');
+        if (place) { setCompassPlace(place); return; }
+      } catch (err) { /* 尝试下一个源 */ }
+
+      // 源 2：Nominatim（OpenStreetMap）
+      try {
+        const response = await fetchWithTimeout(
+          `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}&zoom=10&accept-language=${lang}`,
+          5000
+        );
+        const data = await response.json();
+        const a = data.address || {};
+        const city = a.city || a.town || a.county || a.state || '';
+        const country = a.country || '';
+        const place = [city, country].filter(Boolean).join(', ');
+        if (place) { setCompassPlace(place); return; }
+      } catch (err) { /* 兜底显示坐标 */ }
+
+      // 全部失败时显示坐标，避免空白
+      setCompassPlace(`${formatCompassCoord(lat, 'N', 'S')}, ${formatCompassCoord(lon, 'E', 'W')}`);
+    }
+
+    function handleCompassPosition(position) {
+      const { latitude, longitude, altitude } = position.coords;
+      document.getElementById('compassLat').innerText = formatCompassCoord(latitude, 'N', 'S');
+      document.getElementById('compassLon').innerText = formatCompassCoord(longitude, 'E', 'W');
+      if (altitude != null) {
+        const sign = altitude < 0 ? '-' : '';
+        document.getElementById('compassAlt').innerText = `${sign}${Math.abs(Math.round(altitude))} m`;
+      } else {
+        document.getElementById('compassAlt').innerText = '--';
+      }
+      setCompassStatus('');
+      reverseGeocode(latitude, longitude);
+    }
+
+    function startCompassGeolocation() {
+      if (!('geolocation' in navigator)) {
+        setCompassStatus(i18n[currentLang].compassNoGeo);
+        return;
+      }
+      setCompassStatus(i18n[currentLang].compassLocating);
+      document.getElementById('compassLocation').innerText = i18n[currentLang].compassLocating;
+      compassWatchId = navigator.geolocation.watchPosition(
+        handleCompassPosition,
+        () => {
+          setCompassStatus(i18n[currentLang].compassLocError);
+          document.getElementById('compassLocation').innerText = '--';
+        },
+        { enableHighAccuracy: true, maximumAge: 3000, timeout: 15000 }
+      );
+    }
+
+    let compassTargetHeading = 0;   // 传感器最新目标角度
+    let compassDisplayHeading = null; // 当前渲染角度（用于插值）
+    let compassRafId = null;
+
+    function updateCompassHeading(heading) {
+      compassTargetHeading = heading;
+      // 首次读数直接显示，无需等待缓动
+      if (compassDisplayHeading == null) {
+        compassDisplayHeading = heading;
+        applyCompassHeading(heading);
+      }
+      if (compassRafId == null) startCompassLoop();
+    }
+
+    function applyCompassHeading(heading) {
+      if (!compassEls) cacheCompassEls();
+      const els = compassEls;
+      if (!els || !els.rotor) return;
+      els.rotor.style.transform = `rotate(${-heading}deg)`;
+      // 方位字母随表盘公转的同时反向自转，保持始终朝上
+      const up = `translate(-50%, -50%) rotate(${heading}deg)`;
+      if (els.cardN) els.cardN.style.transform = up;
+      if (els.cardE) els.cardE.style.transform = up;
+      if (els.cardS) els.cardS.style.transform = up;
+      if (els.cardW) els.cardW.style.transform = up;
+      const deg = ((Math.round(heading) % 360) + 360) % 360;
+      /* innerText 会触发回流；改用 textContent，且仅在显示值变化时写入 */
+      if (deg !== compassLastDeg) {
+        compassLastDeg = deg;
+        if (els.degText) els.degText.textContent = deg;
+      }
+      const dir = i18n[currentLang].compassDirs[Math.round(deg / 45) % 8];
+      if (dir !== compassLastDir) {
+        compassLastDir = dir;
+        if (els.dirText) els.dirText.textContent = dir;
+      }
+    }
+
+    function compassFrame() {
+      if (compassDisplayHeading == null) return;
+      // 最短角度差 + 缓动系数，逐帧逼近目标，消除传感器抖动和顿挫
+      let delta = compassTargetHeading - compassDisplayHeading;
+      if (delta > 180) delta -= 360;
+      if (delta < -180) delta += 360;
+      compassDisplayHeading += delta * 0.18;
+      if (Math.abs(delta) < 0.05) compassDisplayHeading = compassTargetHeading;
+      applyCompassHeading(compassDisplayHeading);
+      // 已贴近目标且无新数据时暂停，避免空转
+      if (compassDisplayHeading === compassTargetHeading) {
+        compassRafId = null;
+        return;
+      }
+      compassRafId = requestAnimationFrame(compassFrame);
+    }
+
+    function startCompassLoop() {
+      compassRafId = requestAnimationFrame(compassFrame);
+    }
+
+    function handleCompassOrientation(event) {
+      let heading = null;
+      if (typeof event.webkitCompassHeading === 'number' && !Number.isNaN(event.webkitCompassHeading)) {
+        heading = event.webkitCompassHeading; // iOS Safari
+      } else if (typeof event.alpha === 'number' && !Number.isNaN(event.alpha)) {
+        heading = (360 - event.alpha) % 360; // Android / Chromium
+      }
+      if (heading == null) {
+        if (!compassNoSensorReported) {
+          compassNoSensorReported = true;
+          setCompassStatus(i18n[currentLang].compassNoSensor);
+        }
+        return;
+      }
+      compassNoSensorReported = false;
+      activateCompassFace();
+      updateCompassHeading(heading);
+    }
+
+    function attachCompassOrientation() {
+      if (compassOrientationHandler) return;
+      compassOrientationHandler = handleCompassOrientation;
+      window.addEventListener('deviceorientationabsolute', compassOrientationHandler, true);
+      window.addEventListener('deviceorientation', compassOrientationHandler, true);
+    }
+
+    // 罗盘启动仪式：圆形按钮放大淡出，罗盘从小到大浮现
+    function activateCompassFace() {
+      const stage = document.getElementById('compassStage');
+      if (stage.classList.contains('activated')) return;
+      const orb = document.getElementById('compassSensorOrb');
+      orb.classList.add('leaving');
+      setTimeout(() => { orb.hidden = true; orb.classList.remove('leaving'); }, 620);
+      stage.classList.add('activated');
+    }
+
+    // 启动按钮内嵌罗盘特征：刻度环（无字母无度数，避免与真罗盘混淆）
+    function buildOrbDial() {
+      const btn = document.getElementById('compass-permission-btn');
+      const ticksBox = document.getElementById('orbTicks');
+      if (!btn || !ticksBox) return;
+      if (!btn.offsetWidth) return;
+
+      ticksBox.innerHTML = '';
+      for (let deg = 0; deg < 360; deg += 3) {
+        const tick = document.createElement('div');
+        tick.className = 'orb-tick' + (deg % 30 === 0 ? ' major' : deg % 15 === 0 ? ' mid' : '');
+        tick.style.transform = `rotate(${deg}deg)`;
+        ticksBox.appendChild(tick);
+      }
+    }
+
+    async function requestCompassSensors() {
+      try {
+        if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+          const response = await DeviceOrientationEvent.requestPermission();
+          if (response !== 'granted') {
+            setCompassStatus(i18n[currentLang].compassDenied);
+            return;
+          }
+        }
+        attachCompassOrientation();
+        activateCompassFace();
+      } catch (err) {
+        setCompassStatus(i18n[currentLang].compassDenied);
+      }
+    }
+
+    function openCompass() {
+      // 桌面端无磁力计，不进入指南针，直接提示改用移动设备
+      if (!isMobileDevice()) {
+        showDeviceNotice();
+        return;
+      }
+      document.getElementById('compassOverlay').classList.add('active');
+      compassLastHeading = null;
+      compassDialRotation = 0;
+      compassNoSensorReported = false;
+      compassLastGeoKey = '';
+      compassTargetHeading = 0;
+      compassDisplayHeading = null;
+      if (compassRafId != null) { cancelAnimationFrame(compassRafId); compassRafId = null; }
+      // 初始只显示中央启动按钮，点击后才浮现罗盘
+      document.getElementById('compassStage').classList.remove('activated');
+      const orb = document.getElementById('compassSensorOrb');
+      orb.hidden = false;
+      orb.classList.remove('leaving');
+      document.getElementById('compassRotor').style.transform = 'rotate(0deg)';
+      document.getElementById('compassDegreeText').textContent = '--';
+      document.getElementById('compassDirText').textContent = '';
+      /* 重置文本写入缓存，避免沿用上次会话的值导致首帧不更新 */
+      compassLastDeg = null;
+      compassLastDir = null;
+      cacheCompassEls();
+      document.getElementById('compassLocation').innerHTML = '&nbsp;';
+      ['compassLat', 'compassLon', 'compassAlt'].forEach(id => { document.getElementById(id).innerText = '--'; });
+      setCompassStatus('');
+      // 等模态框展开后再按实际尺寸绘制表盘与启动按钮
+      requestAnimationFrame(() => { buildCompassDial(); buildOrbDial(); });
+      startCompassGeolocation();
+    }
+
+    function closeCompass() {
+      document.getElementById('compassOverlay').classList.remove('active');
+      if (compassRafId != null) { cancelAnimationFrame(compassRafId); compassRafId = null; }
+      compassDisplayHeading = null;
+      if (compassOrientationHandler) {
+        window.removeEventListener('deviceorientationabsolute', compassOrientationHandler, true);
+        window.removeEventListener('deviceorientation', compassOrientationHandler, true);
+        compassOrientationHandler = null;
+      }
+      if (compassWatchId != null) {
+        navigator.geolocation.clearWatch(compassWatchId);
+        compassWatchId = null;
+      }
+      setCompassStatus('');
+    }
+
+    /* ---------------- 5. 秒表 ---------------- */
+    const STOPWATCH_MAX_LAPS = 100;
+    let stopwatchRunning = false;
+    let stopwatchStartAt = 0;
+    let stopwatchElapsed = 0;
+    let stopwatchRafId = null;
+    let stopwatchLaps = [];
+
+    function formatStopwatch(ms) {
+      const totalCs = Math.floor(ms / 10); // 厘秒
+      const cs = totalCs % 100;
+      const totalSec = Math.floor(totalCs / 100);
+      const sec = totalSec % 60;
+      const min = Math.floor(totalSec / 60) % 60;
+      const hr = Math.floor(totalSec / 3600);
+      const pad = (n) => String(n).padStart(2, '0');
+      const main = hr > 0 ? `${pad(hr)}:${pad(min)}:${pad(sec)}` : `${pad(min)}:${pad(sec)}.${Math.floor(cs / 10)}`;
+      return { main, cs: pad(cs) };
+    }
+
+    function getStopwatchMs() {
+      return stopwatchRunning ? stopwatchElapsed + (Date.now() - stopwatchStartAt) : stopwatchElapsed;
+    }
+
+    function renderStopwatchDisplay(ms) {
+      const { main, cs } = formatStopwatch(ms);
+      const alignedMain = main.replace(/:/g, '<span class="colon">:</span>');
+      document.getElementById('stopwatchDisplay').innerHTML = `${alignedMain}<span class="ms">${cs}</span>`;
+    }
+
+    function stopwatchFrame() {
+      if (!stopwatchRunning) return;
+      renderStopwatchDisplay(getStopwatchMs());
+      stopwatchRafId = requestAnimationFrame(stopwatchFrame);
+    }
+
+    function updateStopwatchButtons() {
+      const t = i18n[currentLang];
+      const toggleBtn = document.getElementById('stopwatch-toggle-btn');
+      toggleBtn.innerText = stopwatchRunning ? t.stopwatchPause : (stopwatchElapsed > 0 ? t.stopwatchResume : t.stopwatchStart);
+      toggleBtn.classList.toggle('running', stopwatchRunning);
+      toggleBtn.classList.toggle('primary', !stopwatchRunning);
+      /* 只有计时进行中才允许计次：暂停或未开始时禁用 Lap 按钮 */
+      const lapBtn = document.getElementById('stopwatch-lap-btn');
+      lapBtn.disabled = !stopwatchRunning;
+      lapBtn.classList.toggle('disabled', !stopwatchRunning);
+    }
+
+    function toggleStopwatch() {
+      if (stopwatchRunning) {
+        stopwatchElapsed += Date.now() - stopwatchStartAt;
+        stopwatchRunning = false;
+        if (stopwatchRafId != null) { cancelAnimationFrame(stopwatchRafId); stopwatchRafId = null; }
+        renderStopwatchDisplay(stopwatchElapsed);
+      } else {
+        stopwatchStartAt = Date.now();
+        stopwatchRunning = true;
+        stopwatchRafId = requestAnimationFrame(stopwatchFrame);
+      }
+      updateStopwatchButtons();
+    }
+
+    function recordLap() {
+      /* 仅计时进行中可计次：暂停、未开始一律拒绝 */
+      if (!stopwatchRunning) return;
+      if (stopwatchLaps.length >= STOPWATCH_MAX_LAPS) return;
+      const current = getStopwatchMs();
+      const prev = stopwatchLaps.length ? stopwatchLaps[stopwatchLaps.length - 1].total : 0;
+      stopwatchLaps.push({ total: current, split: current - prev });
+      renderStopwatchLaps();
+    }
+
+    function renderStopwatchLaps() {
+      const box = document.getElementById('stopwatchRecords');
+      const head = document.getElementById('stopwatch-records-head');
+      head.innerText = i18n[currentLang].stopwatchRecordsHead(stopwatchLaps.length);
+      if (!stopwatchLaps.length) {
+        box.innerHTML = `<div class="stopwatch-empty">${i18n[currentLang].stopwatchEmpty}</div>`;
+        return;
+      }
+      // 最快/最慢计次高亮（至少 3 条才有意义）
+      const splits = stopwatchLaps.map(l => l.split);
+      const best = splits.length >= 3 ? Math.min(...splits) : null;
+      const worst = splits.length >= 3 ? Math.max(...splits) : null;
+      box.innerHTML = stopwatchLaps.map((lap, index) => {
+        const fmt = (ms) => {
+          const { main, cs } = formatStopwatch(ms);
+          return `${main}${cs}`;
+        };
+        const cls = lap.split === best ? ' lap-best' : lap.split === worst ? ' lap-worst' : '';
+        return `<div class="stopwatch-record${cls}">
+          <span class="lap-index">#${index + 1}</span>
+          <span class="lap-split">+${fmt(lap.split)}</span>
+          <span class="lap-time">${fmt(lap.total)}</span>
+        </div>`;
+      }).reverse().join('');
+    }
+
+    function resetStopwatch() {
+      stopwatchRunning = false;
+      stopwatchElapsed = 0;
+      if (stopwatchRafId != null) { cancelAnimationFrame(stopwatchRafId); stopwatchRafId = null; }
+      stopwatchLaps = [];
+      renderStopwatchDisplay(0);
+      renderStopwatchLaps();
+      updateStopwatchButtons();
+    }
+
+    function openStopwatch() {
+      document.getElementById('stopwatchOverlay').classList.add('active');
+      updateStopwatchButtons();
+      renderStopwatchLaps();
+    }
+
+    function closeStopwatch() {
+      document.getElementById('stopwatchOverlay').classList.remove('active');
+    }
+
+    /* ---------------- 6. 计算器（跳转独立页面） ---------------- */
+    function openCalculator() {
+      window.location.href = 'calculator.html';
+    }
+
+    /* ---------------- 7. 水平仪 ---------------- */
+    let levelOrientHandler = null;
+    let levelGotData = false;
+    let levelSensorReady = false;
+    let levelNoDataTimer = null;
+    /* 高频传感器事件下缓存 DOM 引用与舞台半径，避免每次事件都查询布局 */
+    let levelEls = null;
+    let levelStageR = 0;
+
+    function openLevel() {
+      // 水平仪依赖陀螺仪，仅移动设备可用
+      if (!isMobileDevice()) {
+        showDeviceNotice();
+        return;
+      }
+      const overlay = document.getElementById('levelOverlay');
+      overlay.classList.remove('flat');
+      overlay.classList.add('active');
+      levelFlatNow = false;
+      document.getElementById('levelPanel').classList.add('pending');
+      const orb = document.getElementById('levelOrb');
+      orb.classList.remove('leaving');
+      orb.hidden = false;
+      document.getElementById('levelStartText').innerText = i18n[currentLang].levelEnableSensors;
+      levelGotData = false;
+      levelSensorReady = false;
+      setLevelState(i18n[currentLang].levelNeedPermission);
+      cacheLevelEls();
+      // 非 iOS（无需授权弹窗）的设备直接启动，省去一次点击
+      const needsPermission = typeof DeviceOrientationEvent !== 'undefined'
+        && typeof DeviceOrientationEvent.requestPermission === 'function';
+      if (!needsPermission) startLevel();
+    }
+
+    /* iOS 要求必须在用户手势内调用 requestPermission，因此由启动按钮触发 */
+    async function startLevel() {
+      const t = i18n[currentLang];
+      try {
+        if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+          const response = await DeviceOrientationEvent.requestPermission();
+          if (response !== 'granted') {
+            setLevelState(t.levelDenied);
+            document.getElementById('levelStartText').innerText = t.levelRetry;
+            return;
+          }
+        }
+        /* 与指南针一致：启动圆盘放大淡出退场，圆环气泡同时淡入浮现 */
+        const orb = document.getElementById('levelOrb');
+        orb.classList.add('leaving');
+        setTimeout(() => { orb.hidden = true; orb.classList.remove('leaving'); }, 620);
+        document.getElementById('levelPanel').classList.remove('pending');
+        levelSensorReady = true;
+        /* 工作界面只保留圆环与读数，不放任何状态提示词 */
+        setLevelState('');
+        attachLevelOrientation();
+      } catch (err) {
+        setLevelState(t.levelDenied);
+        document.getElementById('levelStartText').innerText = t.levelRetry;
+      }
+    }
+
+    function closeLevel() {
+      document.getElementById('levelOverlay').classList.remove('active', 'flat');
+      if (levelOrientHandler) {
+        window.removeEventListener('deviceorientation', levelOrientHandler, true);
+        levelOrientHandler = null;
+      }
+      if (levelNoDataTimer) { clearTimeout(levelNoDataTimer); levelNoDataTimer = null; }
+      /* 停止动画循环并重置平滑角，下次打开从新读数起步而非旧角度滑入 */
+      if (levelRafId != null) { cancelAnimationFrame(levelRafId); levelRafId = null; }
+      levelSmoothInit = false;
+      levelPending = null;
+      levelSensorReady = false;
+    }
+
+    function setLevelState(text, flat) {
+      const el = document.getElementById('levelState');
+      el.innerText = text;
+      el.classList.toggle('flat', !!flat);
+    }
+
+    /* 缓存水平仪用到的 DOM 与舞台半径，仅在打开/尺寸变化时更新 */
+    function cacheLevelEls() {
+      levelEls = {
+        overlay: document.getElementById('levelOverlay'),
+        bubble: document.getElementById('levelBubble'),
+        readout: document.getElementById('levelReadout')
+      };
+      const stage = document.querySelector('#levelOverlay .level-stage');
+      levelStageR = stage ? stage.clientWidth / 2 : 150;
+    }
+
+    let levelPending = null;   // 最近一次待渲染的倾角（传感器目标值）
+    let levelRafId = null;
+    /* 显示用的平滑倾角：每帧向目标值插值，滤掉传感器噪声与稀疏事件造成的抖动 */
+    let levelSmooth = { x: 0, y: 0 };
+    let levelSmoothInit = false;
+
+    /* 连续动画循环：不依赖事件频率，保证 60fps 丝滑跟随 */
+    function levelLoop() {
+      levelRafId = null;
+      const overlay = document.getElementById('levelOverlay');
+      if (!overlay.classList.contains('active') || !levelSensorReady) return;
+      const t = levelPending || { tiltX: 0, tiltY: 0 };
+      if (!levelSmoothInit) { levelSmooth = { x: t.tiltX, y: t.tiltY }; levelSmoothInit = true; }
+      /* 指数逼近：每帧走剩余差距的 25%，约 3~4 帧收敛，跟手且不抖 */
+      levelSmooth.x += (t.tiltX - levelSmooth.x) * 0.25;
+      levelSmooth.y += (t.tiltY - levelSmooth.y) * 0.25;
+      if (Math.abs(t.tiltX - levelSmooth.x) < 0.01) levelSmooth.x = t.tiltX;
+      if (Math.abs(t.tiltY - levelSmooth.y) < 0.01) levelSmooth.y = t.tiltY;
+      renderLevelFrame(levelSmooth.x, levelSmooth.y);
+      levelRafId = requestAnimationFrame(levelLoop);
+    }
+
+    /* Apple 样式：白色气泡随倾斜偏移，中央显示合角度大读数；水平时整屏变绿、读数归 0。
+       水平判定带滞回：进入 0.5° 内才判水平，超出 1.5° 才退出，避免临界抖动来回跳 */
+    let levelFlatNow = false;
+    function renderLevelFrame(tiltX, tiltY) {
+      if (!levelEls) return;
+      if (!levelFlatNow && Math.abs(tiltX) < 0.5 && Math.abs(tiltY) < 0.5) levelFlatNow = true;
+      else if (levelFlatNow && (Math.abs(tiltX) > 1.5 || Math.abs(tiltY) > 1.5)) levelFlatNow = false;
+      const isFlat = levelFlatNow;
+      const maxOffset = levelStageR * 0.30;
+      // 气泡移动方向与倾斜方向相反（水泡往高处跑）
+      const ox = -tiltY / 45 * maxOffset;
+      const oy = tiltX / 45 * maxOffset;
+      levelEls.bubble.style.transform =
+        `translate(calc(-50% + ${ox.toFixed(2)}px), calc(-50% + ${oy.toFixed(2)}px))`;
+      /* 水平（绿屏）时读数固定显示 0°，不再出现绿屏却显示 1° 的矛盾 */
+      const shown = isFlat ? 0 : Math.max(1, Math.round(Math.hypot(tiltX, tiltY)));
+      levelEls.readout.innerText = `${shown}°`;
+      levelEls.overlay.classList.toggle('flat', isFlat);
+    }
+
+    function attachLevelOrientation() {
+      if (levelOrientHandler) return;
+      if (!levelEls) cacheLevelEls();
+      levelOrientHandler = (event) => {
+        const beta = event.beta;   // 前后倾角 -180..180
+        const gamma = event.gamma; // 左右倾角 -90..90
+        if (beta == null || gamma == null) return;
+        levelGotData = true;
+        if (levelNoDataTimer) { clearTimeout(levelNoDataTimer); levelNoDataTimer = null; }
+
+        const flatScreen = Math.abs(beta) > 160 || Math.abs(beta) < 20; // 平放（屏幕朝上/朝下）
+        const ax = flatScreen ? gamma : beta;   // 平放时 gamma 是左右倾角
+        const ay = flatScreen ? (Math.abs(beta) > 160 ? 180 - Math.abs(beta) : beta) : gamma;
+        const clamp = v => Math.max(-45, Math.min(45, v));
+        // 始终以水平地面为零度，不提供自定义参考角
+        levelPending = { tiltX: clamp(ax), tiltY: clamp(ay) };
+        if (levelRafId == null) levelRafId = requestAnimationFrame(levelLoop);
+      };
+      window.addEventListener('deviceorientation', levelOrientHandler, true);
+      // 3 秒仍无数据则提示（授权成功但设备无陀螺仪的情况）
+      levelNoDataTimer = setTimeout(() => {
+        if (document.getElementById('levelOverlay').classList.contains('active') && !levelGotData) {
+          setLevelState(i18n[currentLang].levelNoGyro);
+        }
+      }, 3000);
+    }
+
+    /* 本页没有合法的双击用途：拦截 dblclick 默认行为，兜底防止连点触发浏览器放大 */
+    document.addEventListener('dblclick', (e) => { e.preventDefault(); });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        closeClockSaver();
+        closeTimer();
+        closeWorldClock();
+        closeCompass();
+        closeStopwatch();
+        closeLevel();
+        closeLinkModal();
+        closeDeviceNotice();
+      }
+    });
+
+    /* ===== 深浅色主题：与全站共用 yw_calc_theme 键，默认跟随系统 ===== */
+    const THEME_SUN = '<circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path>';
+    const THEME_MOON = '<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"></path>';
+    function siteTheme() {
+      let saved = null;
+      try { saved = localStorage.getItem('yw_calc_theme'); } catch (e) { /* 忽略 */ }
+      if (saved === 'light' || saved === 'dark') return saved;
+      return (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) ? 'light' : 'dark';
+    }
+    function applySiteTheme(mode) {
+      document.documentElement.classList.toggle('light', mode === 'light');
+      const icon = document.getElementById('theme-icon');
+      if (icon) icon.innerHTML = (mode === 'light') ? THEME_MOON : THEME_SUN;
+      const meta = document.querySelector('meta[name="theme-color"]');
+      if (meta) meta.setAttribute('content', mode === 'light' ? '#f7f6f3' : '#0b0b0b');
+    }
+    function toggleTheme() {
+      const next = document.documentElement.classList.contains('light') ? 'dark' : 'light';
+      try { localStorage.setItem('yw_calc_theme', next); } catch (e) { /* 忽略 */ }
+      applySiteTheme(next);
+      /* canvas 地图颜色写死在绘制逻辑里，切换主题后需重绘才能同步配色 */
+      const worldModal = document.getElementById('worldClockOverlay');
+      if (worldModal && worldModal.classList.contains('active')) drawDaylightMap();
+    }
+    applySiteTheme(siteTheme());
+    if (window.matchMedia) {
+      window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', (e) => {
+        let saved = null;
+        try { saved = localStorage.getItem('yw_calc_theme'); } catch (err) { /* 忽略 */ }
+        if (saved !== 'light' && saved !== 'dark') applySiteTheme(e.matches ? 'light' : 'dark');
+      });
+    }
+  </script>
+</body>
+</html>

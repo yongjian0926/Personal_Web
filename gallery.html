@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gallery | Yongjian Wang</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background-color: #0b0b0b; color: #f4f4f4; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    
+    /* 导航栏基础样式 */
+    nav { 
+      display: flex; justify-content: space-between; align-items: center; 
+      padding: 1.2rem 5%; background: #0b0b0b; 
+      position: fixed; width: 100%; top: 0; z-index: 100; border-bottom: 1px solid #333; 
+    }
+    .logo { font-size: 1.4rem; letter-spacing: 3px; font-weight: bold; color: #fff; text-transform: uppercase; text-decoration: none; transition: 0.3s; white-space: nowrap; }
+    .logo:hover { color: #d4af37; }
+    
+    /* 桌面端右侧容器布局 */
+    .nav-right-container {
+      display: flex;
+      align-items: center;
+      gap: 2.5rem;
+    }
+
+    .nav-links { display: flex; gap: 2rem; align-items: center; }
+    .nav-links a { color: #aaa; text-decoration: none; letter-spacing: 2px; font-size: 0.9rem; transition: 0.3s; white-space: nowrap; }
+    .nav-links a:hover, .nav-links a.active { color: #d4af37; }
+    
+    .lang-btn { 
+      background: transparent; 
+      border: 1px solid #444; 
+      color: #fff; 
+      padding: 4px 10px; 
+      cursor: pointer; 
+      font-size: 0.8rem; 
+      letter-spacing: 1px; 
+      transition: 0.3s; 
+      white-space: nowrap;
+      border-radius: 4px;
+    }
+    .lang-btn:hover { border-color: #d4af37; color: #d4af37; }
+
+    /* Apple 官网精细化汉堡包按钮 */
+    .menu-toggle {
+      display: none; position: relative;
+      width: 18px; height: 18px; 
+      background: transparent; border: none; cursor: pointer; padding: 0; z-index: 101;
+    }
+    .menu-toggle .bar { 
+      position: absolute; left: 0;
+      width: 100%; height: 2px; 
+      background-color: #e5e5e5; border-radius: 1px; 
+      transition: transform 0.35s cubic-bezier(0.52, 0.16, 0.52, 0.84), top 0.35s cubic-bezier(0.52, 0.16, 0.52, 0.84); 
+    }
+
+    /* 初始静止状态：上下两杠 */
+    .menu-toggle .bar:nth-child(1) { top: 4px; }
+    .menu-toggle .bar:nth-child(2) { top: 12px; }
+
+    /* 激活状态：向中心收聚重合，再旋转 45° 交叉成 X */
+    .menu-toggle.active .bar:nth-child(1) {
+      top: 8px;
+      transform: rotate(45deg);
+    }
+    .menu-toggle.active .bar:nth-child(2) {
+      top: 8px;
+      transform: rotate(-45deg);
+    }
+
+    /* 画廊默认网格布局：宽屏电脑端每行 3 张 */
+    .gallery-container { padding: 120px 4% 50px 4%; max-width: 1400px; margin: 0 auto; }
+    .section-title { font-size: 2rem; letter-spacing: 4px; text-align: center; margin-bottom: 3rem; color: #d4af37; }
+    
+    .grid { 
+      display: grid; 
+      grid-template-columns: repeat(3, 1fr); /* 💻 宽屏电脑：每行 3 张 */
+      gap: 20px; 
+    }
+    .grid-item { overflow: hidden; border-radius: 4px; border: 1px solid #222; background: #111; cursor: pointer; }
+    .grid-item img { width: 100%; height: 380px; object-fit: cover; display: block; transition: transform 0.5s; }
+    .grid-item:hover img { transform: scale(1.05); }
+
+    /* 📱 手机端 / 窄屏视图（宽度小于等于 1024px 时触发） */
+    @media (max-width: 1024px) {
+      nav { padding: 1.1rem 6%; }
+      .logo { font-size: 1.1rem; letter-spacing: 2px; }
+      
+      .nav-right-container { gap: 16px; }
+      .menu-toggle { display: block; }
+
+      /* 移动端全屏 Apple 风格抽屉 */
+      .nav-links {
+        position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+        background-color: #0b0b0b;
+        flex-direction: column; align-items: flex-start; justify-content: flex-start;
+        padding: 100px 10% 40px 10%; gap: 24px;
+        opacity: 0; visibility: hidden; pointer-events: none;
+        transition: opacity 0.35s cubic-bezier(0.52, 0.16, 0.24, 1), visibility 0.35s ease;
+        z-index: 99;
+      }
+      .nav-links.active { opacity: 1; visibility: visible; pointer-events: auto; }
+
+      /* 移动端菜单大字号与隐藏状态（向上偏移） */
+      .nav-links a {
+        font-size: 1.65rem; font-weight: 600; letter-spacing: 1.5px;
+        color: #e5e5e5; width: 100%; display: block; padding: 4px 0;
+        opacity: 0;
+        transform: translateY(-20px);
+        transition: opacity 0.4s cubic-bezier(0.52, 0.16, 0.24, 1), transform 0.4s cubic-bezier(0.52, 0.16, 0.24, 1), color 0.3s;
+      }
+
+      /* 激活时滑入并按延迟递增铺开 */
+      .nav-links.active a {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      .nav-links.active a:nth-child(1) { transition-delay: 0.1s; }
+      .nav-links.active a:nth-child(2) { transition-delay: 0.16s; }
+      .nav-links.active a:nth-child(3) { transition-delay: 0.22s; }
+      .nav-links.active a:nth-child(4) { transition-delay: 0.28s; }
+
+      .nav-links a:hover, .nav-links a.active { color: #d4af37; }
+
+      /* 📱 手机端/窄屏下：网格严格保持每行 2 张 */
+      .gallery-container { padding-top: 100px; padding-left: 12px; padding-right: 12px; }
+      .section-title { font-size: 1.5rem; margin-bottom: 2rem; }
+      .grid { 
+        grid-template-columns: repeat(2, 1fr) !important; /* 强制手机/窄屏视图每行 2 张 */
+        gap: 12px; 
+      }
+      .grid-item img { height: 260px; }
+    }
+
+    @media (max-width: 480px) {
+      .grid-item img { height: 200px; }
+    }
+    
+    /* 大图预览弹窗 */
+    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 1000; justify-content: center; align-items: center; flex-direction: column; padding: 20px; }
+    .modal-img { max-width: 90%; max-height: 75vh; border-radius: 4px; border: 1px solid #444; object-fit: contain; }
+    .modal-close-btn { margin-top: 25px; padding: 10px 35px; background: transparent; border: 1px solid #fff; color: #fff; cursor: pointer; font-size: 1rem; letter-spacing: 2px; }
+    .modal-close-btn:hover { background: #fff; color: #000; }
+
+    /* ===== 主题切换按钮与浅色主题 ===== */
+    html { color-scheme: dark; }
+    html.light { color-scheme: light; }
+    .theme-btn {
+      background: transparent; border: 1px solid #444; color: #fff;
+      padding: 4px 8px; cursor: pointer; font-size: 0.8rem; letter-spacing: 1px;
+      transition: 0.3s; white-space: nowrap; border-radius: 4px;
+      display: inline-flex; align-items: center; justify-content: center;
+    }
+    .theme-btn:hover { border-color: #d4af37; color: #d4af37; }
+    .theme-btn svg { width: 14px; height: 14px; display: block; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    /* 语言与主题按钮统一规格：等高、无边框透明底、桌面手机完全一致；两按钮间竖线分隔 */
+    .nav-ctrl-group { display: flex; align-items: center; gap: 8px; }
+    .nav-divider { width: 1px; height: 18px; background: #555; }
+    html.light .nav-divider { background: #c2bdb2; }
+    .lang-btn, .theme-btn {
+      height: 30px; padding: 0 6px;
+      display: inline-flex; align-items: center; justify-content: center;
+      border: 0; background: transparent; border-radius: 0;
+    }
+
+    html.light body { background-color: #f7f6f3; color: #26262a; }
+    html.light nav { background: #ffffff; border-bottom-color: #ddd8cf; }
+    html.light .logo { color: #17171a; }
+    html.light .nav-links a { color: #5a5a60; }
+    html.light .lang-btn, html.light .theme-btn { color: #17171a; border-color: #c9c4ba; }
+    html.light .menu-toggle .bar { background-color: #3a3a3e; }
+    html.light .grid-item { background: #fff; border-color: #ddd8cf; }
+    html.light .modal { background: rgba(20,20,20,0.88); }
+    html.light .modal-img { border-color: #c9c4ba; }
+    @media (max-width: 1024px) {
+      html.light .nav-links { background-color: #f7f6f3; }
+      html.light .nav-links a { color: #2b2b30; }
+    }
+  </style>
+</head>
+<body>
+  <nav>
+    <a href="index.html" class="logo">YONGJIAN WANG</a>
+    
+    <div class="nav-right-container">
+      <div class="nav-ctrl-group">
+        <button class="theme-btn" onclick="toggleTheme()" id="theme-btn" aria-label="Toggle theme">
+          <svg id="theme-icon" viewBox="0 0 24 24" aria-hidden="true"></svg>
+        </button>
+        <span class="nav-divider" aria-hidden="true"></span>
+        <button class="lang-btn" onclick="toggleLanguage()" id="lang-btn">中</button>
+      </div>
+
+      <div class="nav-links" id="navLinks">
+        <a href="index.html" id="nav-about">About</a>
+        <a href="gallery.html" class="active" id="nav-gallery">Gallery</a>
+        <a href="utility.html" id="nav-utility">Utility</a>
+        <a href="nav.html" id="nav-nav">Navigation</a>
+      </div>
+
+      <button class="menu-toggle" id="menuToggle" aria-label="Toggle Menu">
+        <span class="bar"></span>
+        <span class="bar"></span>
+      </button>
+    </div>
+  </nav>
+
+  <div class="gallery-container">
+    <h2 class="section-title" id="page-title">Gallery</h2>
+    <div class="grid">
+      <div class="grid-item"><img src="IMG_4826.jpeg" onclick="openModal(this.src)" loading="lazy"></div>
+      <div class="grid-item"><img src="IMG_7771.jpeg" onclick="openModal(this.src)" loading="lazy"></div>
+      <div class="grid-item"><img src="IMG_4572.jpeg" onclick="openModal(this.src)" loading="lazy"></div>
+      <div class="grid-item"><img src="ChatGPT%20Image%20Aug%2025,%202026%20at%2008_49_04%20AM.png" onclick="openModal(this.src)" loading="lazy"></div>
+      <div class="grid-item"><img src="yongjian_personal.jpeg" onclick="openModal(this.src)" loading="lazy"></div>
+      <div class="grid-item"><img src="ChatGPT Image Aug 25, 2026 at 08_48_53 AM.png" onclick="openModal(this.src)" loading="lazy"></div>
+      <div class="grid-item"><img src="IMG_7789.jpeg" onclick="openModal(this.src)" loading="lazy"></div>
+      <div class="grid-item"><img src="IMG_7453.jpeg" onclick="openModal(this.src)" loading="lazy"></div>
+      <div class="grid-item"><img src="IMG_7780.jpeg" onclick="openModal(this.src)" loading="lazy"></div>
+      <div class="grid-item"><img src="IMG_7062.jpeg" onclick="openModal(this.src)" loading="lazy"></div>
+      <div class="grid-item"><img src="IMG_7751.jpeg" onclick="openModal(this.src)" loading="lazy"></div>
+      <div class="grid-item"><img src="IMG_7762.jpeg" onclick="openModal(this.src)" loading="lazy"></div>
+    </div>
+  </div>
+
+  <div id="imageModal" class="modal">
+    <img id="modalImg" class="modal-img">
+    <button class="modal-close-btn" onclick="closeModal()" id="modal-close">CLOSE</button>
+  </div>
+
+  <script>
+    // 菜单展开/收起 + “=” 转 “X” 动画逻辑
+    const menuToggle = document.getElementById('menuToggle');
+    const navLinks = document.getElementById('navLinks');
+    menuToggle.addEventListener('click', () => {
+      menuToggle.classList.toggle('active');
+      navLinks.classList.toggle('active');
+    });
+
+    // 语言切换逻辑
+    let currentLang = 'en';
+    const i18n = {
+      en: { navAbout: 'About', navGallery: 'Gallery', navNav: 'Navigation', langBtn: '中', pageTitle: 'Gallery', modalClose: 'CLOSE' },
+      zh: { navAbout: '个人介绍', navGallery: '照片展示', navUtility: '实用工具', navNav: '网址导航', langBtn: 'EN', pageTitle: '照片画廊', modalClose: '关闭' }
+    };
+
+    function toggleLanguage() {
+      currentLang = currentLang === 'en' ? 'zh' : 'en';
+      const t = i18n[currentLang];
+      document.getElementById('nav-about').innerText = t.navAbout;
+      document.getElementById('nav-gallery').innerText = t.navGallery;
+      document.getElementById('nav-utility').innerText = t.navUtility;
+      document.getElementById('nav-nav').innerText = t.navNav;
+      document.getElementById('lang-btn').innerText = t.langBtn;
+      document.getElementById('page-title').innerText = t.pageTitle;
+      document.getElementById('modal-close').innerText = t.modalClose;
+    }
+
+    function openModal(src) {
+      document.getElementById('modalImg').src = src;
+      document.getElementById('imageModal').style.display = 'flex';
+    }
+    function closeModal() {
+      document.getElementById('imageModal').style.display = 'none';
+    }
+
+    /* ===== 深浅色主题：与全站共用 yw_calc_theme 键，默认跟随系统 ===== */
+    const THEME_SUN = '<circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path>';
+    const THEME_MOON = '<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"></path>';
+    function siteTheme() {
+      let saved = null;
+      try { saved = localStorage.getItem('yw_calc_theme'); } catch (e) { /* 忽略 */ }
+      if (saved === 'light' || saved === 'dark') return saved;
+      return (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) ? 'light' : 'dark';
+    }
+    function applySiteTheme(mode) {
+      document.documentElement.classList.toggle('light', mode === 'light');
+      const icon = document.getElementById('theme-icon');
+      if (icon) icon.innerHTML = (mode === 'light') ? THEME_MOON : THEME_SUN;
+      const meta = document.querySelector('meta[name="theme-color"]');
+      if (meta) meta.setAttribute('content', mode === 'light' ? '#f7f6f3' : '#0b0b0b');
+    }
+    function toggleTheme() {
+      const next = document.documentElement.classList.contains('light') ? 'dark' : 'light';
+      try { localStorage.setItem('yw_calc_theme', next); } catch (e) { /* 忽略 */ }
+      applySiteTheme(next);
+    }
+    applySiteTheme(siteTheme());
+    if (window.matchMedia) {
+      window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', (e) => {
+        let saved = null;
+        try { saved = localStorage.getItem('yw_calc_theme'); } catch (err) { /* 忽略 */ }
+        if (saved !== 'light' && saved !== 'dark') applySiteTheme(e.matches ? 'light' : 'dark');
+      });
+    }
+  </script>
+</body>
+</html>
