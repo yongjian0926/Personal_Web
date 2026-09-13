@@ -3,7 +3,7 @@
 你好，我是王涌鉴。这里是我的个人网站，用来分享摄影作品、记录对技术与生活的兴趣，也收集了一些日常使用的网页工具和常用网站。
 
 **访问网站：[www.yongjian.life](https://www.yongjian.life)**  
-**GitHub Overview：[yongjian0926](https://github.com/yongjian0926)**
+**My GitHub Overview：[yongjian0926](https://github.com/yongjian0926)**
 
 ## 网站内容
 
